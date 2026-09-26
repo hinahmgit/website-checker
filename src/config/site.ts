@@ -1,13 +1,37 @@
-// ✏️ Branding — change these to make the checker yours.
+// ✏️ Branding and business details — change these to make the checker yours.
 export const site = {
-  name: "Website Checker",
+  name: "CheckWebStack",
   tagline: "See what any website is built with",
   description:
     "Find out which platform, theme and tools a website uses, and get a free UX review with practical fixes.",
-  /** Shown in the footer and on the audit confirmation. */
-  ownerName: "Your Studio",
-  /** Where the "Book a call" buttons go — e.g. your Calendly link. Leave empty to hide them. */
-  bookingUrl: "",
-  /** Your main website, linked from the footer. */
+  /** Business name used in the footer, Privacy Policy and Terms. */
+  ownerName: "HM Studio",
+  /** Contact address shown in the legal pages. */
+  contactEmail: "hinamanzoor101@gmail.com",
+  country: "Pakistan",
+  /** Date the Privacy Policy and Terms were last changed (shown on those pages). */
+  legalUpdated: "26 September 2026",
+  /** Your main website, linked from the footer. Leave empty to hide. */
   homepageUrl: "",
+
+  /** How many checks per rolling 24 hours. */
+  limits: {
+    visitor: 3,
+    account: 10,
+  },
+
+  /** Shown on the "Request full report" form. Leave empty to just say "we'll send you a quote". */
+  auditPrice: "",
 };
+
+export const PROJECT_TYPES = [
+  "New website",
+  "Website redesign",
+  "Shopify store",
+  "WordPress website",
+  "Webflow / Framer site",
+  "Landing page",
+  "Other",
+];
+
+export const BUDGETS = ["Under $500", "$500 – $1,500", "$1,500 – $5,000", "$5,000+", "Not sure yet"];

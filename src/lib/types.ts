@@ -27,7 +27,7 @@ export interface Detection {
   issues: Issue[];
 }
 
-/** What the public checker receives: the full issue list stays locked until the visitor requests the audit. */
+/** What the public checker receives. The full issue list is only included for signed-in users. */
 export interface PublicResult extends Omit<Detection, "issues"> {
   id: string | null;
   issueSummary: {
@@ -37,7 +37,18 @@ export interface PublicResult extends Omit<Detection, "issues"> {
     low: number;
     teaser: Issue | null;
   };
+  issues: Issue[] | null;
+  scores: Scores | null;
 }
+
+export interface Usage {
+  signedIn: boolean;
+  limit: number;
+  used: number;
+  remaining: number;
+}
+
+export type RequestType = "audit" | "website";
 
 export interface Scores {
   performance: number | null;

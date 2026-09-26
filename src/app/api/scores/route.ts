@@ -13,7 +13,7 @@ export async function POST(req: Request) {
   if (check.scores) return NextResponse.json(check.scores);
 
   try {
-    const scores = await fetchScores(check.url);
+    const scores = await fetchScores(check.detection.url);
     await saveScores(check.id, scores).catch((e) => console.error("saving scores failed", e));
     return NextResponse.json(scores);
   } catch (err) {

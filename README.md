@@ -1,11 +1,16 @@
-# Website Checker
+# CheckWebStack by HM Studio
 
 A lead-generation tool: visitors enter a URL and see what the site is built with (platform, theme,
 likely plan/hosting, apps and tech stack), Google mobile scores, and a count of UX/SEO issues.
-The full issue list unlocks when they leave their name and email, which you see in the admin panel.
 
-- **Public checker**: `/`, shareable as `/?url=example.com`
-- **Admin panel**: `/admin` (dashboard, all checked sites, leads, CSV export)
+- **Visitors** get 3 checks per 24 hours and a preview of the issues.
+- **Free accounts** (Google or email link) get 10 checks per 24 hours and the full issue list.
+- **Requests**: "Request full report" (paid audit) and "Request a quote" (new website) go to the admin panel and your email.
+  You reply with an invoice. No payment provider needed.
+- Limits and business details live in `src/config/site.ts`.
+
+Pages: checker `/` (shareable results `/?id=…`), `/signin`, `/request`, `/privacy`, `/terms`, and the admin panel
+`/admin` (dashboard, checked sites, requests with status tracking, users, CSV exports).
 
 ## What's detected
 
@@ -26,7 +31,26 @@ Test detection from the terminal with `npm run detect -- shopify.com wix.com`.
 
 1. Create a free project at [supabase.com](https://supabase.com).
 2. Go to **SQL Editor → New query**, paste all of [`supabase/schema.sql`](supabase/schema.sql), and click **Run**.
-3. Go to **Project Settings → API** and copy the **Project URL** and the **`service_role`** secret key.
+3. Go to **Project Settings → API Keys** and copy the **secret** key (`sb_secret_…`) and the **publishable** key (`sb_publishable_…`).
+   The Project URL is on the project's home page.
+
+Re-run `schema.sql` whenever it changes. It's safe to run again and upgrades an existing database.
+
+### 1b. Visitor sign-in (Google)
+
+1. **Supabase → Authentication → URL Configuration**:
+   - **Site URL**: your live address, e.g. `https://checkwebstack.netlify.app`
+   - **Redirect URLs**: add `https://checkwebstack.netlify.app/**` and `http://localhost:3000/**`
+2. **Google Cloud Console → APIs & Services**:
+   - **OAuth consent screen**: External; app name, support email, and your site as the app domain; publish the app.
+   - **Credentials → Create credentials → OAuth client ID** → *Web application*. Under **Authorized redirect URIs** add
+     `https://<your-project-ref>.supabase.co/auth/v1/callback`.
+3. **Supabase → Authentication → Sign In / Providers → Google**: enable it and paste the Google **Client ID** and **Client secret**.
+4. Set `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`. The "Sign in" button appears once it's set.
+
+**Email sign-in links** are hidden by default: Supabase's built-in mailer only delivers to your own team's addresses
+and a few emails per hour. To enable them for everyone, verify a domain in Resend, add Resend as the custom SMTP
+sender in **Supabase → Authentication → Emails → SMTP Settings**, then set `NEXT_PUBLIC_EMAIL_SIGNIN=true`.
 
 ### 2. Google PageSpeed API key (for the mobile scores)
 
@@ -36,14 +60,14 @@ Test detection from the terminal with `npm run detect -- shopify.com wix.com`.
 
 Without a key, Google's shared quota is usually exhausted and the scores card shows "couldn't score".
 
-### 3. Email alerts for new leads (Resend)
+### 3. Email alerts for new requests (Resend)
 
 1. Sign up at [resend.com](https://resend.com) and create an API key under **API Keys**.
 2. Set `RESEND_API_KEY` to that key and `LEAD_NOTIFY_EMAIL` to **the same email you signed up to Resend with**.
 
-That's enough to start. Emails come from `onboarding@resend.dev`, and hitting **Reply** writes straight to the lead.
+That's enough to start. Emails come from `onboarding@resend.dev`, and hitting **Reply** writes straight to the person who sent the request.
 To send from your own address (e.g. `alerts@yourdomain.com`) or to other inboxes, verify your domain in
-Resend → **Domains**, then set `LEAD_FROM_EMAIL`. If the email fails, the lead is still saved and the error is logged.
+Resend → **Domains**, then set `LEAD_FROM_EMAIL`. If the email fails, the request is still saved and the error is logged.
 
 ### 4. Environment variables
 
@@ -52,6 +76,7 @@ Copy `.env.example` to `.env.local` and fill it in:
 ```
 SUPABASE_URL=...
 SUPABASE_SERVICE_ROLE_KEY=...
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=...
 ADMIN_PASSWORD=...           # your admin login
 ADMIN_SESSION_SECRET=...     # any long random string (40+ characters)
 PAGESPEED_API_KEY=...
@@ -79,7 +104,7 @@ The checker works before Supabase is connected, but nothing is saved until it is
 4. Deploy. Every later `git push` redeploys automatically.
 5. Optional: **Domain management → Add a domain**, e.g. `check.yourdomain.com`.
 
-The checker needs Supabase configured once deployed: without a database, the lead form can fail
+The checker needs Supabase configured once deployed: without a database, limits, sign-in and requests won't work
 because each request may run on a different server.
 
 ## Branding
@@ -92,4 +117,4 @@ because each request may run on a different server.
 - Visitor IPs are never stored. Only a salted hash is kept, for rate limiting (30 checks/hour/IP).
 - The server refuses to fetch private/internal network addresses, limits redirects, time and page size.
 - Tables are locked with row-level security; only the server's service-role key can read or write.
-- Add a privacy notice to your site: the lead form collects names and emails.
+- The Privacy Policy (/privacy) and Terms (/terms) describe this data handling. Review them, and update them if you change what the app collects.

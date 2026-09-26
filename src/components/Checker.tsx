@@ -1,8 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { site } from "@/config/site";
-import type { Confidence, Issue, PublicResult, Scores, Severity } from "@/lib/types";
+import { authEnabled } from "@/lib/supabase-browser";
+import type { Confidence, Issue, PublicResult, Scores, Severity, Usage } from "@/lib/types";
+import RequestForm from "./RequestForm";
 
 const STEPS = [
   "Fetching the homepage",
@@ -13,18 +16,29 @@ const STEPS = [
 ];
 
 type ScoreState = { status: "idle" | "loading" | "done" | "error"; data?: Scores; error?: string };
-type LeadState = { status: "idle" | "sending" | "done"; issues?: Issue[]; error?: string };
+type Me = { email: string | null; name: string | null } | null;
 
 export default function Checker() {
   const [url, setUrl] = useState("");
-  const [phase, setPhase] = useState<"idle" | "loading" | "done" | "error">("idle");
+  const [phase, setPhase] = useState<"idle" | "loading" | "done" | "error" | "limit">("idle");
   const [step, setStep] = useState(0);
   const [result, setResult] = useState<PublicResult | null>(null);
   const [error, setError] = useState("");
   const [scores, setScores] = useState<ScoreState>({ status: "idle" });
-  const [lead, setLead] = useState<LeadState>({ status: "idle" });
+  const [usage, setUsage] = useState<Usage | null>(null);
+  const [me, setMe] = useState<Me>(null);
   const resultRef = useRef<HTMLDivElement>(null);
   const run = useRef(0);
+
+  function showResult(r: PublicResult, current: number) {
+    setResult(r);
+    setUrl(r.domain);
+    setPhase("done");
+    if (r.id) window.history.replaceState(null, "", `?id=${r.id}`);
+    requestAnimationFrame(() => resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+    if (r.scores) setScores({ status: "done", data: r.scores });
+    else if (r.id) loadScores(r.id, current);
+  }
 
   async function analyze(target: string) {
     const current = ++run.current;
@@ -33,7 +47,6 @@ export default function Checker() {
     setError("");
     setResult(null);
     setScores({ status: "idle" });
-    setLead({ status: "idle" });
 
     try {
       const res = await fetch("/api/analyze", {
@@ -43,16 +56,33 @@ export default function Checker() {
       });
       const data = await res.json();
       if (current !== run.current) return;
+      if (data.usage) setUsage(data.usage);
+      if (res.status === 429 && data.code) {
+        setError(data.error);
+        setPhase("limit");
+        return;
+      }
       if (!res.ok) throw new Error(data.error ?? "Something went wrong.");
-      setResult(data as PublicResult);
-      setPhase("done");
-      const params = new URLSearchParams({ url: (data as PublicResult).domain });
-      window.history.replaceState(null, "", `?${params}`);
-      requestAnimationFrame(() => resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
-      if (data.id) loadScores(data.id, current);
+      showResult(data.result as PublicResult, current);
     } catch (err) {
       if (current !== run.current) return;
       setError(err instanceof Error ? err.message : "Something went wrong.");
+      setPhase("error");
+    }
+  }
+
+  async function reopen(id: string) {
+    const current = ++run.current;
+    setPhase("loading");
+    try {
+      const res = await fetch(`/api/result?id=${encodeURIComponent(id)}`);
+      const data = await res.json();
+      if (current !== run.current) return;
+      if (!res.ok) throw new Error(data.error);
+      showResult(data.result as PublicResult, current);
+    } catch (err) {
+      if (current !== run.current) return;
+      setError(err instanceof Error ? err.message : "Couldn't load that result.");
       setPhase("error");
     }
   }
@@ -82,10 +112,20 @@ export default function Checker() {
     return () => clearInterval(t);
   }, [phase]);
 
-  // Support shareable links: /?url=example.com runs the check straight away.
+  // On load: fetch today's usage, then reopen /?id=… results or run /?url=… checks.
   useEffect(() => {
-    const initial = new URLSearchParams(window.location.search).get("url");
-    if (initial) {
+    fetch("/api/usage")
+      .then((r) => r.json())
+      .then((d) => {
+        setUsage(d.usage);
+        setMe(d.user);
+      })
+      .catch(() => {});
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get("id");
+    const initial = params.get("url");
+    if (id) reopen(id);
+    else if (initial) {
       setUrl(initial);
       analyze(initial);
     }
@@ -97,9 +137,11 @@ export default function Checker() {
     if (url.trim() && phase !== "loading") analyze(url);
   }
 
+  const signInHref = `/signin?next=${encodeURIComponent(result?.id ? `/?id=${result.id}` : "/")}`;
+
   return (
     <div>
-      <section className={phase === "idle" || phase === "error" ? "pt-10 pb-8 sm:pt-20" : "pt-6 pb-6"}>
+      <section className={phase === "idle" || phase === "error" || phase === "limit" ? "pt-10 pb-8 sm:pt-20" : "pt-6 pb-6"}>
         <h1 className="text-3xl font-semibold tracking-tight text-balance sm:text-5xl">What is this website built with?</h1>
         <p className="mt-3 max-w-xl text-base text-ink-2 sm:text-lg">
           Enter any website to see its platform, theme, likely plan and tools, plus a quick review of what could be improved.
@@ -130,6 +172,8 @@ export default function Checker() {
           </button>
         </form>
 
+        {usage && <UsageLine usage={usage} signInHref={signInHref} />}
+
         {phase === "error" && (
           <p role="alert" className="mt-4 rounded-lg border border-bad/30 bg-bad-soft px-4 py-3 text-sm text-ink">
             <span className="font-medium text-bad">Couldn&apos;t check that site. </span>
@@ -138,13 +182,16 @@ export default function Checker() {
         )}
       </section>
 
+      {phase === "limit" && <LimitCard message={error} signedIn={usage?.signedIn ?? false} signInHref={signInHref} />}
+
       {phase === "loading" && <Loading step={step} />}
 
       {phase === "done" && result && (
-        <div ref={resultRef} className="scroll-mt-4 space-y-4 pb-16">
+        <div ref={resultRef} className="scroll-mt-4 space-y-4 pb-6">
           <Summary result={result} />
           <ScoresCard state={scores} hasId={Boolean(result.id)} />
-          <Opportunities result={result} lead={lead} setLead={setLead} />
+          <Opportunities result={result} signInHref={signInHref} />
+          <Services result={result} me={me} />
           <Technologies result={result} />
         </div>
       )}
@@ -153,6 +200,45 @@ export default function Checker() {
 }
 
 // ——————————————————————————————————————————————————————————————— pieces
+
+function UsageLine({ usage, signInHref }: { usage: Usage; signInHref: string }) {
+  if (usage.limit <= 0) return null;
+  return (
+    <p className="mt-3 text-sm text-muted">
+      {usage.remaining} of {usage.limit} {usage.signedIn ? "" : "free "}check{usage.limit === 1 ? "" : "s"} left today
+      {!usage.signedIn && authEnabled && (
+        <>
+          {" · "}
+          <Link href={signInHref} className="font-medium text-accent hover:underline">
+            Sign in free for {site.limits.account} a day
+          </Link>
+        </>
+      )}
+    </p>
+  );
+}
+
+function LimitCard({ message, signedIn, signInHref }: { message: string; signedIn: boolean; signInHref: string }) {
+  return (
+    <Card className="border-accent/40">
+      <h2 className="text-lg font-semibold">{signedIn ? "That's today's checks used" : "You've used your free checks"}</h2>
+      <p className="mt-1 text-ink-2">{message}</p>
+      <div className="mt-4 flex flex-wrap gap-2">
+        {!signedIn && authEnabled && (
+          <Link href={signInHref} className="inline-flex h-11 items-center rounded-lg bg-accent px-5 font-medium text-accent-ink hover:bg-accent-hover">
+            Sign in free
+          </Link>
+        )}
+        <Link
+          href="/request?type=audit"
+          className="inline-flex h-11 items-center rounded-lg border border-line bg-surface px-5 font-medium hover:bg-surface-2"
+        >
+          Request a full report
+        </Link>
+      </div>
+    </Card>
+  );
+}
 
 function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return <section className={`rounded-xl border border-line bg-surface p-5 sm:p-6 ${className}`}>{children}</section>;
@@ -374,52 +460,20 @@ function IssueItem({ issue }: { issue: Issue }) {
   );
 }
 
-function Opportunities({
-  result,
-  lead,
-  setLead,
-}: {
-  result: PublicResult;
-  lead: LeadState;
-  setLead: (s: LeadState) => void;
-}) {
+function Opportunities({ result, signInHref }: { result: PublicResult; signInHref: string }) {
   const { issueSummary: sum } = result;
-
-  async function submit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const form = new FormData(e.currentTarget);
-    setLead({ status: "sending" });
-    try {
-      const res = await fetch("/api/leads", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          checkId: result.id,
-          name: form.get("name"),
-          email: form.get("email"),
-          company: form.get("company"),
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      setLead({ status: "done", issues: data.issues });
-    } catch (err) {
-      setLead({ status: "idle", error: err instanceof Error ? err.message : "Please try again." });
-    }
-  }
 
   if (sum.total === 0) {
     return (
       <Card>
         <h2 className="text-lg font-semibold">No quick-win issues found</h2>
-        <p className="mt-1 text-ink-2">The homepage covers the basics well. A deeper review can still uncover conversion and design improvements.</p>
-        <BookingLink />
+        <p className="mt-1 text-ink-2">The homepage covers the basics well. An expert review can still uncover conversion and design improvements.</p>
       </Card>
     );
   }
 
   return (
-    <Card className="border-accent/40">
+    <Card>
       <h2 className="text-lg font-semibold">
         We found {sum.total} thing{sum.total === 1 ? "" : "s"} to improve
       </h2>
@@ -433,21 +487,12 @@ function Opportunities({
           ))}
       </p>
 
-      {lead.status === "done" && lead.issues ? (
-        <>
-          <ul className="mt-4 divide-y divide-line border-t border-line">
-            {lead.issues.map((i) => (
-              <IssueItem key={i.id} issue={i} />
-            ))}
-          </ul>
-          <div className="mt-4 rounded-lg bg-accent-soft p-4">
-            <p className="font-medium">Thanks, here&apos;s your full list.</p>
-            <p className="mt-1 text-sm text-ink-2">
-              {site.ownerName} will follow up by email with a personal review of {result.domain}.
-            </p>
-            <BookingLink />
-          </div>
-        </>
+      {result.issues ? (
+        <ul className="mt-4 divide-y divide-line border-t border-line">
+          {result.issues.map((i) => (
+            <IssueItem key={i.id} issue={i} />
+          ))}
+        </ul>
       ) : (
         <>
           {sum.teaser && (
@@ -456,83 +501,83 @@ function Opportunities({
             </ul>
           )}
           {sum.total > 1 && (
-            <div aria-hidden className="pointer-events-none space-y-2 border-t border-line pt-3 select-none">
-              {Array.from({ length: Math.min(sum.total - 1, 3) }).map((_, i) => (
-                <div key={i} className="flex gap-4 blur-[3px]">
-                  <span className="h-5 w-24 rounded-full bg-surface-2" />
-                  <span className="h-5 flex-1 rounded bg-surface-2" />
+            <>
+              <div aria-hidden className="pointer-events-none space-y-2 border-t border-line pt-3 select-none">
+                {Array.from({ length: Math.min(sum.total - 1, 3) }).map((_, i) => (
+                  <div key={i} className="flex gap-4 blur-[3px]">
+                    <span className="h-5 w-24 rounded-full bg-surface-2" />
+                    <span className="h-5 flex-1 rounded bg-surface-2" />
+                  </div>
+                ))}
+              </div>
+              {authEnabled && (
+                <div className="mt-4 flex flex-col gap-3 rounded-lg border border-line bg-surface-2 p-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="font-medium">See all {sum.total} issues, free</p>
+                    <p className="text-sm text-ink-2">
+                      Sign in with Google to unlock the full list and get {site.limits.account} checks a day.
+                    </p>
+                  </div>
+                  <Link
+                    href={signInHref}
+                    className="inline-flex h-11 shrink-0 items-center justify-center rounded-lg bg-accent px-5 font-medium text-accent-ink hover:bg-accent-hover"
+                  >
+                    Sign in free
+                  </Link>
                 </div>
-              ))}
-            </div>
+              )}
+            </>
           )}
-
-          <form onSubmit={submit} className="mt-5 rounded-lg border border-line bg-surface-2 p-4">
-            <p className="font-medium">Get the full website audit</p>
-            <p className="mt-0.5 text-sm text-ink-2">
-              {sum.total > 1
-                ? `See all ${sum.total} issues now, plus a personal follow-up with what to fix first.`
-                : "Get a personal follow-up on design, UX and conversion improvements for this site."}
-            </p>
-            <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
-              <label className="sr-only" htmlFor="lead-name">
-                Your name
-              </label>
-              <input
-                id="lead-name"
-                name="name"
-                required
-                maxLength={100}
-                autoComplete="name"
-                placeholder="Your name"
-                className="h-11 rounded-lg border border-line bg-surface px-3 outline-none focus:border-accent focus:ring-2 focus:ring-accent/25"
-              />
-              <label className="sr-only" htmlFor="lead-email">
-                Email
-              </label>
-              <input
-                id="lead-email"
-                name="email"
-                type="email"
-                required
-                maxLength={200}
-                autoComplete="email"
-                placeholder="you@company.com"
-                className="h-11 rounded-lg border border-line bg-surface px-3 outline-none focus:border-accent focus:ring-2 focus:ring-accent/25"
-              />
-              {/* honeypot for bots */}
-              <input name="company" tabIndex={-1} autoComplete="off" className="hidden" aria-hidden />
-              <button
-                type="submit"
-                disabled={lead.status === "sending" || !result.id}
-                className="h-11 rounded-lg bg-accent px-5 font-medium text-accent-ink hover:bg-accent-hover disabled:opacity-60"
-              >
-                {lead.status === "sending" ? "Sending…" : sum.total > 1 ? "Unlock audit" : "Get my audit"}
-              </button>
-            </div>
-            {lead.error && (
-              <p role="alert" className="mt-2 text-sm text-bad">
-                {lead.error}
-              </p>
-            )}
-            <p className="mt-2 text-xs text-muted">No spam. Your email is only used to send your audit.</p>
-          </form>
         </>
       )}
     </Card>
   );
 }
 
-function BookingLink() {
-  if (!site.bookingUrl) return null;
+function Services({ result, me }: { result: PublicResult; me: Me }) {
+  const [open, setOpen] = useState(false);
   return (
-    <a
-      href={site.bookingUrl}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="mt-3 inline-flex h-10 items-center rounded-lg bg-accent px-4 text-sm font-medium text-accent-ink hover:bg-accent-hover"
-    >
-      Book a free call →
-    </a>
+    <section aria-label={`Services by ${site.ownerName}`} className="grid gap-4 sm:grid-cols-2">
+      <Card className={`border-accent/40 ${open ? "sm:col-span-2" : ""}`}>
+        <p className="text-xs font-medium tracking-wide text-accent uppercase">Expert review</p>
+        <h2 className="mt-1 text-lg font-semibold">Get the full report</h2>
+        <p className="mt-1 text-sm text-ink-2">
+          A hands-on UX, design and conversion audit of {result.domain} by {site.ownerName}, with a prioritised list of what to fix.
+        </p>
+        {open ? (
+          <div className="mt-4">
+            <RequestForm
+              type="audit"
+              website={result.url}
+              checkId={result.id}
+              defaultName={me?.name ?? ""}
+              defaultEmail={me?.email ?? ""}
+            />
+          </div>
+        ) : (
+          <button
+            onClick={() => setOpen(true)}
+            className="mt-4 inline-flex h-11 items-center rounded-lg bg-accent px-5 font-medium text-accent-ink hover:bg-accent-hover"
+          >
+            Request full report
+          </button>
+        )}
+      </Card>
+
+      <Card className={open ? "sm:col-span-2" : ""}>
+        <p className="text-xs font-medium tracking-wide text-muted uppercase">Design &amp; build</p>
+        <h2 className="mt-1 text-lg font-semibold">Need a new website?</h2>
+        <p className="mt-1 text-sm text-ink-2">
+          {site.ownerName} designs and builds fast, conversion-focused sites on Shopify, WordPress, Webflow, Framer or custom code.
+        </p>
+        <Link
+          href={`/request?type=website&website=${encodeURIComponent(result.domain)}`}
+          className="mt-4 inline-flex h-11 items-center rounded-lg border border-line bg-surface px-5 font-medium hover:bg-surface-2"
+        >
+          Request a quote
+        </Link>
+      </Card>
+    </section>
   );
 }
 

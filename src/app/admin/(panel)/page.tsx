@@ -7,10 +7,8 @@ import { fmtDateTime, fmtNum, pctChange } from "@/lib/format";
 export default async function Dashboard() {
   await requireAdmin();
   const [stats, recent] = await Promise.all([getStats(), listChecks({ page: 1, limit: 8 })]);
-  const { checks, domains, leads } = stats;
+  const { checks, domains, signups, requests } = stats;
   const year = Number(new Intl.DateTimeFormat("en-US", { timeZone: timeZone(), year: "numeric" }).format(new Date()));
-  const successful = checks.total - checks.errors;
-  const conversion = successful > 0 ? ((leads.total / successful) * 100).toFixed(1) : "0.0";
 
   return (
     <div className="space-y-8">
@@ -23,8 +21,11 @@ export default async function Dashboard() {
           <a href="/api/admin/export?type=checks" className="rounded-lg border border-line bg-surface px-3 py-2 hover:bg-surface-2">
             Export checks CSV
           </a>
-          <a href="/api/admin/export?type=leads" className="rounded-lg border border-line bg-surface px-3 py-2 hover:bg-surface-2">
-            Export leads CSV
+          <a href="/api/admin/export?type=requests" className="rounded-lg border border-line bg-surface px-3 py-2 hover:bg-surface-2">
+            Export requests CSV
+          </a>
+          <a href="/api/admin/export?type=users" className="rounded-lg border border-line bg-surface px-3 py-2 hover:bg-surface-2">
+            Export users CSV
           </a>
         </div>
       </div>
@@ -47,11 +48,22 @@ export default async function Dashboard() {
         />
       </StatGroup>
 
-      <StatGroup title="Leads">
-        <Stat label="All time" value={leads.total} />
-        <Stat label="This month" value={leads.this_month} compare={{ previous: leads.last_month, label: "last month" }} />
-        <Stat label={`This year (${year})`} value={leads.this_year} note={`${fmtNum(leads.last_year)} in ${year - 1}`} />
-        <Stat label="Check → lead rate" display={`${conversion}%`} note={`${fmtNum(checks.errors)} checks failed`} />
+      <StatGroup title="Requests (full reports & website quotes)">
+        <Stat label="Awaiting reply" value={requests.new} note={`${fmtNum(requests.open)} still open`} href="/admin/requests?status=new" />
+        <Stat label="This month" value={requests.this_month} compare={{ previous: requests.last_month, label: "last month" }} />
+        <Stat label={`This year (${year})`} value={requests.this_year} note={`${fmtNum(requests.last_year)} in ${year - 1}`} />
+        <Stat label="All time" value={requests.total} note={`${fmtNum(requests.audit)} reports · ${fmtNum(requests.website)} websites`} />
+      </StatGroup>
+
+      <StatGroup title="Sign-ups">
+        <Stat label="All time" value={signups.total} href="/admin/users" />
+        <Stat label="This month" value={signups.this_month} compare={{ previous: signups.last_month, label: "last month" }} />
+        <Stat label={`This year (${year})`} value={signups.this_year} note={`${fmtNum(signups.last_year)} in ${year - 1}`} />
+        <Stat
+          label="Checks by signed-in users"
+          value={checks.by_users}
+          note={checks.total ? `${Math.round((checks.by_users / checks.total) * 100)}% of all checks` : undefined}
+        />
       </StatGroup>
 
       <div className="grid gap-4 lg:grid-cols-5">
@@ -136,16 +148,18 @@ function StatGroup({ title, children }: { title: string; children: React.ReactNo
   );
 }
 
-function Stat({ label, value, display, note, compare }: {
+function Stat({ label, value, display, note, compare, href }: {
   label: string;
   value?: number;
   display?: string;
   note?: string;
   compare?: { previous: number; label: string };
+  href?: string;
 }) {
   const change = compare && value != null ? pctChange(value, compare.previous) : null;
+  const Box = href ? Link : "div";
   return (
-    <div className="rounded-xl border border-line bg-surface p-4">
+    <Box href={href!} className={`block rounded-xl border border-line bg-surface p-4 ${href ? "hover:border-accent/50" : ""}`}>
       <p className="text-sm text-ink-2">{label}</p>
       <p className="mt-1 text-3xl font-semibold tracking-tight">{display ?? fmtNum(value)}</p>
       {compare ? (
@@ -160,7 +174,7 @@ function Stat({ label, value, display, note, compare }: {
       ) : note ? (
         <p className="mt-1 text-xs text-muted">{note}</p>
       ) : null}
-    </div>
+    </Box>
   );
 }
 

@@ -1,8 +1,9 @@
 -- Website Checker — database schema
--- Run this once in Supabase: Dashboard → SQL Editor → New query → paste → Run.
--- Safe to re-run: every statement is idempotent.
+-- Run in Supabase: Dashboard → SQL Editor → New query → paste → Run.
+-- Safe to re-run any time (also to upgrade an older version): every statement is idempotent.
 
 
+-- ———————————————————————————————————————————————————————— checks
 -- Every website analysis that was run.
 create table if not exists public.checks (
   id           uuid primary key default gen_random_uuid(),
@@ -23,13 +24,86 @@ create table if not exists public.checks (
 );
 
 alter table public.checks add column if not exists details jsonb;
+alter table public.checks add column if not exists user_id uuid references auth.users (id) on delete set null;
 
 create index if not exists checks_created_at_idx on public.checks (created_at desc);
 create index if not exists checks_domain_idx     on public.checks (domain, created_at);
 create index if not exists checks_ip_idx         on public.checks (ip_hash, created_at desc);
 create index if not exists checks_platform_idx   on public.checks (platform);
+create index if not exists checks_user_idx       on public.checks (user_id, created_at desc);
 
--- People who requested the full audit.
+
+-- ———————————————————————————————————————————————————————— accounts
+-- One row per signed-up user, created automatically on sign-up.
+create table if not exists public.profiles (
+  id         uuid primary key references auth.users (id) on delete cascade,
+  email      text,
+  full_name  text,
+  avatar_url text,
+  provider   text,                       -- google / email
+  created_at timestamptz not null default now()
+);
+
+create index if not exists profiles_created_at_idx on public.profiles (created_at desc);
+
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  insert into public.profiles (id, email, full_name, avatar_url, provider)
+  values (
+    new.id,
+    new.email,
+    coalesce(new.raw_user_meta_data ->> 'full_name', new.raw_user_meta_data ->> 'name'),
+    new.raw_user_meta_data ->> 'avatar_url',
+    new.raw_app_meta_data ->> 'provider'
+  )
+  on conflict (id) do nothing;
+  return new;
+end;
+$$;
+
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute function public.handle_new_user();
+
+-- Backfill anyone who signed up before this trigger existed.
+insert into public.profiles (id, email, full_name, avatar_url, provider, created_at)
+select u.id, u.email,
+       coalesce(u.raw_user_meta_data ->> 'full_name', u.raw_user_meta_data ->> 'name'),
+       u.raw_user_meta_data ->> 'avatar_url',
+       u.raw_app_meta_data ->> 'provider',
+       u.created_at
+from auth.users u
+on conflict (id) do nothing;
+
+
+-- ———————————————————————————————————————————————————————— requests
+-- "Request full report" (paid audit) and "Request a quote" (new website).
+create table if not exists public.requests (
+  id           uuid primary key default gen_random_uuid(),
+  type         text not null check (type in ('audit', 'website')),
+  status       text not null default 'new' check (status in ('new', 'contacted', 'won', 'lost')),
+  name         text not null,
+  email        text not null,
+  website      text,
+  project_type text,
+  budget       text,
+  message      text,
+  user_id      uuid references auth.users (id) on delete set null,
+  check_id     uuid references public.checks (id) on delete set null,
+  created_at   timestamptz not null default now()
+);
+
+create index if not exists requests_created_at_idx on public.requests (created_at desc);
+
+
+-- ———————————————————————————————————————————————————————— legacy
+-- Email-unlock leads from the first version (kept so old data isn't lost).
 create table if not exists public.leads (
   id         uuid primary key default gen_random_uuid(),
   check_id   uuid references public.checks (id) on delete set null,
@@ -40,15 +114,20 @@ create table if not exists public.leads (
   created_at timestamptz not null default now()
 );
 
-create index if not exists leads_created_at_idx on public.leads (created_at desc);
 
--- Lock the tables down: only the server (service_role key) may read or write.
-alter table public.checks enable row level security;
-alter table public.leads  enable row level security;
-revoke all on public.checks, public.leads from anon, authenticated;
+-- ———————————————————————————————————————————————————————— security
+-- Lock every table down: only the server (secret / service_role key) may read or write.
+alter table public.checks   enable row level security;
+alter table public.profiles enable row level security;
+alter table public.requests enable row level security;
+alter table public.leads    enable row level security;
+revoke all on public.checks, public.profiles, public.requests, public.leads from anon, authenticated;
 
+
+-- ———————————————————————————————————————————————————————— admin views
 -- Checks with a flag for whether this was the first time the domain was ever checked.
-create or replace view public.checks_with_flags
+drop view if exists public.checks_with_flags;
+create view public.checks_with_flags
 with (security_invoker = true) as
 select
   c.*,
@@ -58,6 +137,21 @@ from public.checks c;
 
 revoke all on public.checks_with_flags from anon, authenticated;
 
+-- Users with how many sites each has checked.
+drop view if exists public.profiles_with_usage;
+create view public.profiles_with_usage
+with (security_invoker = true) as
+select
+  p.*,
+  (select count(*) from public.checks c where c.user_id = p.id)   as checks_count,
+  (select max(c.created_at) from public.checks c where c.user_id = p.id) as last_check_at,
+  (select count(*) from public.requests r where r.user_id = p.id or lower(r.email) = lower(p.email)) as requests_count
+from public.profiles p;
+
+revoke all on public.profiles_with_usage from anon, authenticated;
+
+
+-- ———————————————————————————————————————————————————————— dashboard
 -- All dashboard numbers in one round trip.
 -- tz: IANA time zone for month/year boundaries, e.g. 'Asia/Karachi'.
 create or replace function public.admin_stats(tz text default 'UTC')
@@ -90,7 +184,8 @@ select jsonb_build_object(
     'last_month', (select count(*) from checks, b where created_at >= b.prev_month_start and created_at < b.month_start),
     'this_year',  (select count(*) from checks, b where created_at >= b.year_start),
     'last_year',  (select count(*) from checks, b where created_at >= b.prev_year_start and created_at < b.year_start),
-    'errors',     (select count(*) from checks where status = 'error')
+    'errors',     (select count(*) from checks where status = 'error'),
+    'by_users',   (select count(*) from checks where user_id is not null)
   ),
   'domains', jsonb_build_object(
     'unique_total', (select count(*) from first_seen),
@@ -100,12 +195,23 @@ select jsonb_build_object(
     'new_last_year',  (select count(*) from first_seen, b where first_at >= b.prev_year_start and first_at < b.year_start),
     'repeat_checks',  (select count(*) from checks) - (select count(*) from first_seen)
   ),
-  'leads', jsonb_build_object(
-    'total',      (select count(*) from leads),
-    'this_month', (select count(*) from leads, b where created_at >= b.month_start),
-    'last_month', (select count(*) from leads, b where created_at >= b.prev_month_start and created_at < b.month_start),
-    'this_year',  (select count(*) from leads, b where created_at >= b.year_start),
-    'last_year',  (select count(*) from leads, b where created_at >= b.prev_year_start and created_at < b.year_start)
+  'signups', jsonb_build_object(
+    'total',      (select count(*) from profiles),
+    'this_month', (select count(*) from profiles, b where created_at >= b.month_start),
+    'last_month', (select count(*) from profiles, b where created_at >= b.prev_month_start and created_at < b.month_start),
+    'this_year',  (select count(*) from profiles, b where created_at >= b.year_start),
+    'last_year',  (select count(*) from profiles, b where created_at >= b.prev_year_start and created_at < b.year_start)
+  ),
+  'requests', jsonb_build_object(
+    'total',      (select count(*) from requests),
+    'audit',      (select count(*) from requests where type = 'audit'),
+    'website',    (select count(*) from requests where type = 'website'),
+    'open',       (select count(*) from requests where status in ('new', 'contacted')),
+    'new',        (select count(*) from requests where status = 'new'),
+    'this_month', (select count(*) from requests, b where created_at >= b.month_start),
+    'last_month', (select count(*) from requests, b where created_at >= b.prev_month_start and created_at < b.month_start),
+    'this_year',  (select count(*) from requests, b where created_at >= b.year_start),
+    'last_year',  (select count(*) from requests, b where created_at >= b.prev_year_start and created_at < b.year_start)
   ),
   'platforms', (
     select coalesce(jsonb_agg(jsonb_build_object('platform', p, 'count', n) order by n desc), '[]'::jsonb)

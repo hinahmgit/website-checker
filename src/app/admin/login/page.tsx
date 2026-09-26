@@ -13,7 +13,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
     <main className="grid min-h-dvh place-items-center px-4">
       <form method="post" action="/api/admin/login" className="w-full max-w-sm rounded-xl border border-line bg-surface p-6">
         <h1 className="text-xl font-semibold">{site.name} admin</h1>
-        <p className="mt-1 text-sm text-ink-2">Sign in to see checks, leads and stats.</p>
+        <p className="mt-1 text-sm text-ink-2">Sign in to see checks, requests, users and stats.</p>
 
         <label htmlFor="password" className="mt-6 block text-sm font-medium">
           Password

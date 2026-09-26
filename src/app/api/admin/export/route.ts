@@ -23,7 +23,32 @@ export async function GET(req: Request) {
   const stamp = new Date().toISOString().slice(0, 10);
 
   let csv: string;
-  if (type === "leads") {
+  if (type === "requests") {
+    const rows = await readAll<Row>("requests", "created_at, type, status, name, email, website, project_type, budget, message");
+    csv = toCsv(rows, [
+      ["Date", (r) => r.created_at],
+      ["Type", (r) => (r.type === "audit" ? "Full report" : "New website")],
+      ["Status", (r) => r.status],
+      ["Name", (r) => r.name],
+      ["Email", (r) => r.email],
+      ["Website", (r) => r.website],
+      ["Project", (r) => r.project_type],
+      ["Budget", (r) => r.budget],
+      ["Message", (r) => r.message],
+    ]);
+  } else if (type === "users") {
+    const rows = await readAll<Row>("profiles_with_usage", "created_at, full_name, email, provider, checks_count, last_check_at, requests_count");
+    csv = toCsv(rows, [
+      ["Signed up", (r) => r.created_at],
+      ["Name", (r) => r.full_name],
+      ["Email", (r) => r.email],
+      ["Signed in with", (r) => r.provider],
+      ["Checks", (r) => r.checks_count],
+      ["Last check", (r) => r.last_check_at],
+      ["Requests", (r) => r.requests_count],
+    ]);
+  } else if (type === "leads") {
+    // Email-unlock leads from the first version of the checker.
     const rows = await readAll<Row>("leads", "created_at, name, email, domain, website");
     csv = toCsv(rows, [
       ["Date", (r) => r.created_at],

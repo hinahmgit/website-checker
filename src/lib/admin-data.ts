@@ -16,7 +16,7 @@ interface PeriodCounts {
 }
 
 export interface Stats {
-  checks: PeriodCounts & { errors: number };
+  checks: PeriodCounts & { errors: number; by_users: number };
   domains: {
     unique_total: number;
     new_this_month: number;
@@ -25,7 +25,8 @@ export interface Stats {
     new_last_year: number;
     repeat_checks: number;
   };
-  leads: PeriodCounts;
+  signups: PeriodCounts;
+  requests: PeriodCounts & { audit: number; website: number; open: number; new: number };
   platforms: { platform: string; count: number }[];
   platforms_this_month: { platform: string; count: number }[];
   daily: Point[];
@@ -90,28 +91,69 @@ export async function listChecks(opts: { page: number; q?: string; platform?: st
   return { rows: (data ?? []) as CheckRow[], total: count ?? 0 };
 }
 
-export interface LeadRow {
+
+export interface UserRow {
   id: string;
   created_at: string;
-  name: string;
-  email: string;
-  website: string | null;
-  domain: string | null;
-  check_id: string | null;
+  email: string | null;
+  full_name: string | null;
+  avatar_url: string | null;
+  provider: string | null;
+  checks_count: number;
+  last_check_at: string | null;
+  requests_count: number;
 }
 
-export async function listLeads(opts: { page: number; q?: string }) {
+export async function listUsers(opts: { page: number; q?: string }) {
   const from = (opts.page - 1) * PAGE_SIZE;
   let query = db()
-    .from("leads")
-    .select("id, created_at, name, email, website, domain, check_id", { count: "exact" })
+    .from("profiles_with_usage")
+    .select("*", { count: "exact" })
     .order("created_at", { ascending: false })
     .range(from, from + PAGE_SIZE - 1);
   const q = cleanSearch(opts.q);
-  if (q) query = query.or(`email.ilike.%${q}%,name.ilike.%${q}%,domain.ilike.%${q}%`);
+  if (q) query = query.or(`email.ilike.%${q}%,full_name.ilike.%${q}%`);
   const { data, count, error } = await query;
   if (error) throw error;
-  return { rows: (data ?? []) as LeadRow[], total: count ?? 0 };
+  return { rows: (data ?? []) as UserRow[], total: count ?? 0 };
+}
+
+export const REQUEST_STATUSES = ["new", "contacted", "won", "lost"] as const;
+export type RequestStatus = (typeof REQUEST_STATUSES)[number];
+
+export interface RequestRow {
+  id: string;
+  created_at: string;
+  type: "audit" | "website";
+  status: RequestStatus;
+  name: string;
+  email: string;
+  website: string | null;
+  project_type: string | null;
+  budget: string | null;
+  message: string | null;
+  user_id: string | null;
+}
+
+export async function listRequests(opts: { page: number; q?: string; type?: string; status?: string }) {
+  const from = (opts.page - 1) * PAGE_SIZE;
+  let query = db()
+    .from("requests")
+    .select("id, created_at, type, status, name, email, website, project_type, budget, message, user_id", { count: "exact" })
+    .order("created_at", { ascending: false })
+    .range(from, from + PAGE_SIZE - 1);
+  const q = cleanSearch(opts.q);
+  if (q) query = query.or(`email.ilike.%${q}%,name.ilike.%${q}%,website.ilike.%${q}%`);
+  if (opts.type === "audit" || opts.type === "website") query = query.eq("type", opts.type);
+  if (REQUEST_STATUSES.includes(opts.status as RequestStatus)) query = query.eq("status", opts.status!);
+  const { data, count, error } = await query;
+  if (error) throw error;
+  return { rows: (data ?? []) as RequestRow[], total: count ?? 0 };
+}
+
+export async function setRequestStatus(id: string, status: RequestStatus): Promise<void> {
+  const { error } = await db().from("requests").update({ status }).eq("id", id);
+  if (error) throw error;
 }
 
 /** Reads a whole table or view in batches of 1000 (for CSV export). */

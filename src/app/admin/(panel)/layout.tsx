@@ -39,8 +39,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <div className="rounded-xl border border-warn/40 bg-warn-soft p-5">
             <h1 className="font-semibold">Connect the database to see stats</h1>
             <p className="mt-1 text-sm text-ink-2">
-              Set <code>SUPABASE_URL</code> and <code>SUPABASE_SERVICE_ROLE_KEY</code> in <code>.env.local</code> (or in Vercel →
-              Settings → Environment Variables), run <code>supabase/schema.sql</code> in the Supabase SQL editor, then restart the app.
+              Set <code>SUPABASE_URL</code> and <code>SUPABASE_SERVICE_ROLE_KEY</code> in <code>.env.local</code> (or in Netlify → Site configuration →
+              Environment variables), run <code>supabase/schema.sql</code> in the Supabase SQL editor, then restart the app.
             </p>
           </div>
         )}

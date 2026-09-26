@@ -70,12 +70,17 @@ npm run dev
 Open http://localhost:3000, and http://localhost:3000/admin for the dashboard.
 The checker works before Supabase is connected, but nothing is saved until it is.
 
-### 6. Deploy to Vercel
+### 6. Deploy to Netlify (free plan allows commercial use)
 
 1. Push this folder to a GitHub repository.
-2. On [vercel.com](https://vercel.com), click **Add New → Project** and import the repo.
-3. Add the same environment variables under **Settings → Environment Variables**, then deploy.
-4. Optional: add a custom domain such as `check.yourdomain.com`.
+2. On [netlify.com](https://netlify.com), sign up with GitHub, then **Add new site → Import an existing project → GitHub** and pick the repo.
+   Netlify detects Next.js automatically. Leave the build settings as they are.
+3. Before the first deploy, open **Add environment variables** and add every variable from your `.env.local`.
+4. Deploy. Every later `git push` redeploys automatically.
+5. Optional: **Domain management → Add a domain**, e.g. `check.yourdomain.com`.
+
+The checker needs Supabase configured once deployed: without a database, the lead form can fail
+because each request may run on a different server.
 
 ## Branding
 

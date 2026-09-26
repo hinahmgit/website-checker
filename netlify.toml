@@ -1,0 +1,7 @@
+[build]
+  command = "npm run build"
+
+[build.environment]
+  # These two aren't secrets (a time zone name and the public Supabase address), but if they're
+  # marked secret in Netlify, the secrets scanner flags them wherever the same text appears.
+  SECRETS_SCAN_OMIT_KEYS = "ADMIN_TIMEZONE,SUPABASE_URL"

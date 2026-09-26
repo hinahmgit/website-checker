@@ -1,0 +1,131 @@
+@import "tailwindcss";
+
+/* ✏️ Brand colours live here. --accent drives buttons and links. */
+:root {
+  color-scheme: light;
+  --bg: #f7f7f5;
+  --surface: #ffffff;
+  --surface-2: #f1f0ec;
+  --ink: #0b0b0b;
+  --ink-2: #52514e;
+  --muted: #7a7873;
+  --line: #e4e3dd;
+  --accent: #2a63d6;
+  --accent-hover: #1f51b8;
+  --accent-soft: #e8effc;
+  --accent-ink: #ffffff;
+
+  /* status — always paired with a text label */
+  --good: #0a7d0a;
+  --good-soft: #e5f4e5;
+  --warn: #9a6500;
+  --warn-soft: #fbf1dc;
+  --bad: #c03333;
+  --bad-soft: #fbe7e7;
+
+  /* charts */
+  --series-1: #2a78d6;
+  --grid: #e1e0d9;
+  --axis: #c3c2b7;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0d0d0d;
+    --surface: #1a1a19;
+    --surface-2: #232321;
+    --ink: #f5f5f3;
+    --ink-2: #c3c2b7;
+    --muted: #8f8d86;
+    --line: #2f2f2c;
+    --accent: #5b8def;
+    --accent-hover: #7aa3f3;
+    --accent-soft: #1b2a46;
+    --accent-ink: #0b0b0b;
+    --good: #3fbf3f;
+    --good-soft: #15291a;
+    --warn: #f0b33a;
+    --warn-soft: #2e2511;
+    --bad: #ef6b6b;
+    --bad-soft: #341818;
+    --series-1: #3987e5;
+    --grid: #2c2c2a;
+    --axis: #383835;
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0d0d0d;
+  --surface: #1a1a19;
+  --surface-2: #232321;
+  --ink: #f5f5f3;
+  --ink-2: #c3c2b7;
+  --muted: #8f8d86;
+  --line: #2f2f2c;
+  --accent: #5b8def;
+  --accent-hover: #7aa3f3;
+  --accent-soft: #1b2a46;
+  --accent-ink: #0b0b0b;
+  --good: #3fbf3f;
+  --good-soft: #15291a;
+  --warn: #f0b33a;
+  --warn-soft: #2e2511;
+  --bad: #ef6b6b;
+  --bad-soft: #341818;
+  --series-1: #3987e5;
+  --grid: #2c2c2a;
+  --axis: #383835;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-ink: var(--accent-ink);
+  --color-good: var(--good);
+  --color-good-soft: var(--good-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-bad: var(--bad);
+  --color-bad-soft: var(--bad-soft);
+  --color-series-1: var(--series-1);
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+html,
+body {
+  background: var(--bg);
+  color: var(--ink);
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, var(--surface-2) 25%, var(--line) 50%, var(--surface-2) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton { animation: none; }
+  * { transition: none !important; }
+}

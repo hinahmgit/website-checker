@@ -133,13 +133,15 @@ export interface RequestRow {
   budget: string | null;
   message: string | null;
   user_id: string | null;
+  /** The checked site the lead wants "a website like". */
+  checks: { domain: string } | null;
 }
 
 export async function listRequests(opts: { page: number; q?: string; type?: string; status?: string }) {
   const from = (opts.page - 1) * PAGE_SIZE;
   let query = db()
     .from("requests")
-    .select("id, created_at, type, status, name, email, website, project_type, budget, message, user_id", { count: "exact" })
+    .select("id, created_at, type, status, name, email, website, project_type, budget, message, user_id, checks(domain)", { count: "exact" })
     .order("created_at", { ascending: false })
     .range(from, from + PAGE_SIZE - 1);
   const q = cleanSearch(opts.q);
@@ -148,7 +150,7 @@ export async function listRequests(opts: { page: number; q?: string; type?: stri
   if (REQUEST_STATUSES.includes(opts.status as RequestStatus)) query = query.eq("status", opts.status!);
   const { data, count, error } = await query;
   if (error) throw error;
-  return { rows: (data ?? []) as RequestRow[], total: count ?? 0 };
+  return { rows: (data ?? []) as unknown as RequestRow[] /* checks(domain) is many-to-one: an object at runtime */, total: count ?? 0 };
 }
 
 export async function setRequestStatus(id: string, status: RequestStatus): Promise<void> {

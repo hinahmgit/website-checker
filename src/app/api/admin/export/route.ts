@@ -24,14 +24,14 @@ export async function GET(req: Request) {
 
   let csv: string;
   if (type === "requests") {
-    const rows = await readAll<Row>("requests", "created_at, type, status, name, email, website, project_type, budget, message");
+    const rows = await readAll<Row>("requests", "created_at, type, status, name, email, website, project_type, budget, message, checks(domain)");
     csv = toCsv(rows, [
       ["Date", (r) => r.created_at],
-      ["Type", (r) => (r.type === "audit" ? "Full report" : "New website")],
+      ["Wants a site like", (r) => (r.checks as Row | null)?.domain],
       ["Status", (r) => r.status],
       ["Name", (r) => r.name],
       ["Email", (r) => r.email],
-      ["Website", (r) => r.website],
+      ["Current website", (r) => r.website],
       ["Project", (r) => r.project_type],
       ["Budget", (r) => r.budget],
       ["Message", (r) => r.message],
@@ -45,9 +45,9 @@ export async function GET(req: Request) {
       ["Signed in with", (r) => r.provider],
       ["Checks", (r) => r.checks_count],
       ["Last check", (r) => r.last_check_at],
-      ["Requests", (r) => r.requests_count],
+      ["Leads", (r) => r.requests_count],
     ]);
-  } else if (type === "leads") {
+  } else if (type === "legacy-leads") {
     // Email-unlock leads from the first version of the checker.
     const rows = await readAll<Row>("leads", "created_at, name, email, domain, website");
     csv = toCsv(rows, [
@@ -85,7 +85,7 @@ export async function GET(req: Request) {
   return new Response(csv, {
     headers: {
       "content-type": "text/csv; charset=utf-8",
-      "content-disposition": `attachment; filename="${type}-${stamp}.csv"`,
+      "content-disposition": `attachment; filename="${type === "requests" ? "leads" : type}-${stamp}.csv"`,
       "cache-control": "no-store",
     },
   });

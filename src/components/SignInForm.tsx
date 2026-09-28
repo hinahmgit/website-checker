@@ -116,7 +116,7 @@ export default function SignInForm({ next, error }: { next: string; error?: stri
         <Link href="/privacy" className="underline hover:text-ink">
           Privacy Policy
         </Link>
-        . {site.name} is free: accounts get {site.limits.account} checks a day and the full issue list.
+        . {site.name} is free: accounts get unlimited checks and detailed reports.
       </p>
     </div>
   );

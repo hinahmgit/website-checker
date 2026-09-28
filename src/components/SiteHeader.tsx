@@ -57,8 +57,8 @@ export default function SiteHeader() {
       </Link>
 
       <nav className="flex items-center gap-1 text-sm sm:gap-3">
-        <Link href="/request?type=website" className="rounded-md px-2 py-1.5 font-medium text-ink-2 hover:text-ink">
-          Get a quote
+        <Link href="/request" className="rounded-md px-2 py-1.5 font-medium text-ink-2 hover:text-ink">
+          Request a website
         </Link>
         {authEnabled && user === null && (
           <Link href="/signin" className="rounded-lg border border-line bg-surface px-3 py-1.5 font-medium hover:bg-surface-2">
@@ -86,11 +86,8 @@ export default function SiteHeader() {
             {open && (
               <div role="menu" className="absolute right-0 z-20 mt-2 w-60 rounded-lg border border-line bg-surface p-1 shadow-lg">
                 <p className="truncate px-3 py-2 text-xs text-muted">{user.email}</p>
-                <Link role="menuitem" href="/request?type=audit" className="block rounded-md px-3 py-2 hover:bg-surface-2" onClick={() => setOpen(false)}>
-                  Request full report
-                </Link>
-                <Link role="menuitem" href="/request?type=website" className="block rounded-md px-3 py-2 hover:bg-surface-2" onClick={() => setOpen(false)}>
-                  Request a website quote
+                <Link role="menuitem" href="/request" className="block rounded-md px-3 py-2 hover:bg-surface-2" onClick={() => setOpen(false)}>
+                  Request a website
                 </Link>
                 <button role="menuitem" onClick={signOut} className="block w-full rounded-md px-3 py-2 text-left hover:bg-surface-2">
                   Sign out

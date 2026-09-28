@@ -31,10 +31,10 @@ export default function PrivacyPage() {
         If you sign in with Google, we receive your name, email address and profile picture from Google. If you sign in with an email
         link, we receive your email address. We never see or store your Google password.
       </p>
-      <h3>Requests you send us</h3>
+      <h3>Website requests you send us</h3>
       <p>
-        When you request a full report or a website quote, we store the details you provide: your name, email, website, project type,
-        budget and message.
+        When you send a “Request a website” form, we store the details you provide: your name, email, current website, project
+        type, budget, message, and which checked website inspired the request.
       </p>
       <h3>Cookies</h3>
       <p>
@@ -46,7 +46,7 @@ export default function PrivacyPage() {
       <ul>
         <li>To run the website checker and show your results.</li>
         <li>To manage your account and apply the daily check limits.</li>
-        <li>To reply to your report and quote requests, and to send you quotes or invoices you asked for.</li>
+        <li>To reply to your website requests, and to send you quotes or invoices you asked for.</li>
         <li>To prevent abuse and keep the service secure.</li>
         <li>To understand, in aggregate, how the service is used (for example, which platforms are most common) and improve it.</li>
       </ul>
@@ -69,7 +69,7 @@ export default function PrivacyPage() {
           checked; and website icons shown in results.
         </li>
         <li>
-          <strong>Resend</strong>: delivers notification emails about requests you send us.
+          <strong>Resend</strong>: delivers notification emails about website requests you send us.
         </li>
       </ul>
       <p>

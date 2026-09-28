@@ -17,9 +17,8 @@ export default function TermsPage() {
       <h2>1. The service</h2>
       <p>
         {site.name} analyses publicly available information about websites (such as page code, headers and performance tests) to estimate
-        which platform, theme and technologies they use, and to point out possible improvements. Checking is free, with daily limits:
-        visitors can run {site.limits.visitor} checks and signed-in users {site.limits.account} checks per 24 hours. We may change these
-        limits or features at any time.
+        which platform, theme and technologies they use, and to point out possible improvements. Checking is free. Visitors can run {site.limits.visitor} checks per 24 hours; signed-in users get unlimited checks and
+        detailed reports, subject to fair use (see section 3). We may change these limits or features at any time.
       </p>
 
       <h2>2. Results are estimates</h2>
@@ -45,9 +44,9 @@ export default function TermsPage() {
         account at any time by emailing {mail}.
       </p>
 
-      <h2>5. Paid services</h2>
+      <h2>5. Website projects</h2>
       <p>
-        Full website reports and website design or development projects are separate, paid services. Sending a request through the site
+        Website design and development projects are separate, paid services. Sending a “Request a website” form
         doesn&apos;t create a contract or any obligation for either side. Before any paid work starts, we&apos;ll agree the scope,
         price, payment terms and timeline with you in writing (for example by email or invoice), and those agreed terms apply to that
         work.
@@ -55,8 +54,8 @@ export default function TermsPage() {
 
       <h2>6. Intellectual property</h2>
       <p>
-        The service, including its design, software and content, belongs to {site.ownerName}. You may use the results and any report we
-        deliver to you for your own business purposes. Names such as Shopify, WordPress, Wix, Webflow and Framer are trademarks of their
+        The service, including its design, software and content, belongs to {site.ownerName}. You may use the results and reports, including
+        downloaded PDFs, for your own business purposes. Names such as Shopify, WordPress, Wix, Webflow and Framer are trademarks of their
         owners. {site.name} is not affiliated with or endorsed by them.
       </p>
 

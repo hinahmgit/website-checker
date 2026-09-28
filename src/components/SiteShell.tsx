@@ -6,9 +6,11 @@ import SiteHeader from "./SiteHeader";
 export default function SiteShell({ children, width = "max-w-3xl" }: { children: React.ReactNode; width?: string }) {
   return (
     <div className={`mx-auto flex min-h-dvh ${width} flex-col px-4 sm:px-6`}>
-      <SiteHeader />
+      <div className="print:hidden">
+        <SiteHeader />
+      </div>
       <main className="flex-1">{children}</main>
-      <footer className="mt-10 border-t border-line py-6 text-xs text-muted">
+      <footer className="mt-10 border-t border-line py-6 text-xs text-muted print:hidden">
         <p>
           “Likely plan” is an estimate from publicly visible signals. Platforms don&apos;t publish which subscription a site is on.
         </p>
@@ -30,8 +32,8 @@ export default function SiteShell({ children, width = "max-w-3xl" }: { children:
           <Link href="/terms" className="hover:text-ink hover:underline">
             Terms of Service
           </Link>
-          <Link href="/request?type=website" className="hover:text-ink hover:underline">
-            Request a quote
+          <Link href="/request" className="hover:text-ink hover:underline">
+            Request a website
           </Link>
         </div>
       </footer>

@@ -15,24 +15,22 @@ export async function POST(req: Request) {
   // Honeypot: real visitors never see or fill the "company" field.
   if (typeof body.company === "string" && body.company.trim()) return NextResponse.json({ ok: true });
 
-  const type = body.type === "audit" || body.type === "website" ? body.type : null;
+  // Only website requests are offered now; every submission is stored as a lead.
+  const type = "website" as const;
   const name = clean(body.name, 100)?.replace(/\s+/g, " ") ?? null;
   const email = clean(body.email, 200)?.toLowerCase() ?? null;
   const projectType = clean(body.projectType, 60);
   const budget = clean(body.budget, 60);
 
-  if (!type) return NextResponse.json({ error: "Unknown request type." }, { status: 400 });
   if (!name) return NextResponse.json({ error: "Please enter your name." }, { status: 400 });
   if (!email || !EMAIL.test(email)) return NextResponse.json({ error: "Please enter a valid email address." }, { status: 400 });
-  if (projectType && !PROJECT_TYPES.includes(projectType)) return NextResponse.json({ error: "Please pick a project type." }, { status: 400 });
-  if (budget && !BUDGETS.includes(budget)) return NextResponse.json({ error: "Please pick a budget." }, { status: 400 });
+  if (!projectType || !PROJECT_TYPES.includes(projectType)) return NextResponse.json({ error: "Please pick a project type." }, { status: 400 });
+  if (!budget || !BUDGETS.includes(budget)) return NextResponse.json({ error: "Please pick a budget." }, { status: 400 });
 
-  let website = clean(body.website, 300);
-  const checkId = isUuid(body.checkId) ? body.checkId : null;
-  if (checkId && !website) website = (await getCheck(checkId).catch(() => null))?.detection.url ?? null;
-  if (type === "audit" && !website) {
-    return NextResponse.json({ error: "Please enter the website you'd like audited." }, { status: 400 });
-  }
+  const website = clean(body.website, 300);
+  // The checked site the visitor wants "a website like".
+  const reference = isUuid(body.checkId) ? await getCheck(body.checkId).catch(() => null) : null;
+  const checkId = reference?.id ?? null;
 
   try {
     if ((await countRecentRequests(email)) >= 5) {
@@ -48,7 +46,7 @@ export async function POST(req: Request) {
     name,
     email,
     website,
-    projectType: type === "website" ? projectType : null,
+    projectType,
     budget,
     message: clean(body.message, 3000),
     userId: user?.id ?? null,
@@ -62,8 +60,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Couldn't send your request. Please try again." }, { status: 500 });
   }
 
-  const adminUrl = new URL("/admin/requests", req.url).toString();
-  after(() => notifyNewRequest(request, adminUrl).catch((err) => console.error("request email failed", err)));
+  const adminUrl = new URL("/admin/leads", req.url).toString();
+  after(() =>
+    notifyNewRequest(request, adminUrl, reference?.detection.domain).catch((err) => console.error("lead email failed", err)),
+  );
 
   return NextResponse.json({ ok: true });
 }

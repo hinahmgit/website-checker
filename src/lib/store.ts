@@ -131,13 +131,21 @@ export async function getCheck(id: string): Promise<{ id: string; detection: Det
   };
 }
 
-/** Shapes a check for the browser; the full issue list is only included for signed-in users. */
+/** How many technologies (besides the platform) a visitor sees before signing in. */
+const PREVIEW_TECH = 5;
+
+/** Shapes a check for the browser. Signed-in users get the detailed report; visitors get a preview. */
 export function toPublic(id: string | null, d: Detection, scores: Scores | null, signedIn: boolean): PublicResult {
-  const { issues, ...rest } = d;
+  const { issues, technologies, platform, ...rest } = d;
+  const shownTech = signedIn ? technologies : technologies.slice(0, PREVIEW_TECH + 1); // +1: the platform itself
   return {
     ...rest,
+    platform: signedIn ? platform : { ...platform, evidence: [] },
+    technologies: shownTech,
     id,
     scores,
+    detailed: signedIn,
+    hiddenTechCount: technologies.length - shownTech.length,
     issues: signedIn ? issues : null,
     issueSummary: {
       total: issues.length,

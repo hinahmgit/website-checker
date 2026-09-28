@@ -18,8 +18,9 @@ export default async function SignInPage({ searchParams }: { searchParams: Promi
       <div className="mx-auto max-w-md pt-10 sm:pt-16">
         <h1 className="text-3xl font-semibold tracking-tight">Sign in to {site.name}</h1>
         <ul className="mt-4 space-y-1.5 text-ink-2">
-          <li>✓ {site.limits.account} website checks a day (instead of {site.limits.visitor})</li>
-          <li>✓ The full list of UX and SEO issues for every site</li>
+          <li>✓ Unlimited website checks (instead of {site.limits.visitor} a day)</li>
+          <li>✓ Detailed reports: every issue, the full tech stack and how it was detected</li>
+          <li>✓ Download any report as a PDF</li>
           <li>✓ Free, no credit card</li>
         </ul>
         <div className="mt-8 rounded-xl border border-line bg-surface p-5 sm:p-6">

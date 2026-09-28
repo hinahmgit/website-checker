@@ -39,13 +39,18 @@ export interface PublicResult extends Omit<Detection, "issues"> {
   };
   issues: Issue[] | null;
   scores: Scores | null;
+  /** True for signed-in users: full issues, full tech stack, detection evidence, PDF download. */
+  detailed: boolean;
+  /** Technologies left out of a visitor's preview. */
+  hiddenTechCount: number;
 }
 
+/** Today's checks. For signed-in users `limit` and `remaining` are null (unlimited). */
 export interface Usage {
   signedIn: boolean;
-  limit: number;
+  limit: number | null;
   used: number;
-  remaining: number;
+  remaining: number | null;
 }
 
 export type RequestType = "audit" | "website";

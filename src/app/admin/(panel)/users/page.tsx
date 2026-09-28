@@ -42,7 +42,7 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
               <th className="px-4 py-3 font-medium">Via</th>
               <th className="px-4 py-3 text-right font-medium">Checks</th>
               <th className="px-4 py-3 font-medium">Last check</th>
-              <th className="px-4 py-3 text-right font-medium">Requests</th>
+              <th className="px-4 py-3 text-right font-medium">Leads</th>
             </tr>
           </thead>
           <tbody>

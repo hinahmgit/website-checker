@@ -5,7 +5,8 @@ import { analyzeUrl } from "@/lib/detect/analyze";
 import { CheckError, domainOf, normalizeInput } from "@/lib/detect/fetch";
 import { clientIp, hashIp } from "@/lib/request";
 import { countChecksToday, saveCheck, toPublic } from "@/lib/store";
-import type { Detection, Usage } from "@/lib/types";
+import type { Detection } from "@/lib/types";
+import { usageFor } from "@/lib/usage";
 
 export const maxDuration = 30;
 
@@ -22,20 +23,19 @@ export async function POST(req: Request) {
 
   const user = await currentUser();
   const ipHash = hashIp(clientIp(req));
-  const limit = user ? site.limits.account : site.limits.visitor;
   let used = 0;
   try {
     used = await countChecksToday({ userId: user?.id ?? null, ipHash });
   } catch (err) {
     console.error("usage lookup failed", err);
   }
-  if (used >= limit) {
-    const usage: Usage = { signedIn: Boolean(user), limit, used, remaining: 0 };
+  const { blocked, ...usage } = usageFor(Boolean(user), used);
+  if (blocked) {
     return NextResponse.json(
       {
         error: user
-          ? `You've used all ${limit} checks for today. Your limit resets 24 hours after your first check.`
-          : `You've used your ${limit} free checks for today. Sign in free to get ${site.limits.account} checks a day.`,
+          ? "You've run a very large number of checks today. Please try again tomorrow."
+          : `You've used your ${site.limits.visitor} free checks for today. Sign in free for unlimited checks and the detailed report.`,
         code: user ? "limit_account" : "limit_visitor",
         usage,
       },
@@ -67,6 +67,6 @@ export async function POST(req: Request) {
     console.error("saving check failed", err);
   }
 
-  const usage: Usage = { signedIn: Boolean(user), limit, used: used + 1, remaining: Math.max(0, limit - used - 1) };
-  return NextResponse.json({ result: toPublic(id, detection, null, Boolean(user)), usage });
+  const { blocked: _, ...after } = usageFor(Boolean(user), used + 1);
+  return NextResponse.json({ result: toPublic(id, detection, null, Boolean(user)), usage: after });
 }

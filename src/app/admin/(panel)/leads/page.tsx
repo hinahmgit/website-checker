@@ -13,7 +13,7 @@ const STATUS_STYLE: Record<RequestStatus, string> = {
   lost: "bg-surface-2 text-muted",
 };
 
-const TYPE_LABEL = { audit: "Full report", website: "New website" };
+const TYPE_LABEL = { audit: "Full report (old)", website: "Website request" };
 
 async function updateStatus(formData: FormData) {
   "use server";
@@ -22,11 +22,11 @@ async function updateStatus(formData: FormData) {
   const status = formData.get("status") as RequestStatus;
   if (!isUuid(id) || !REQUEST_STATUSES.includes(status)) return;
   await setRequestStatus(id, status);
-  revalidatePath("/admin/requests");
+  revalidatePath("/admin/leads");
   revalidatePath("/admin");
 }
 
-export default async function RequestsPage({
+export default async function LeadsPage({
   searchParams,
 }: {
   searchParams: Promise<{ q?: string; type?: string; status?: string; page?: string }>;
@@ -39,7 +39,7 @@ export default async function RequestsPage({
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <h1 className="text-2xl font-semibold tracking-tight">Requests</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Leads</h1>
         <a href="/api/admin/export?type=requests" className="rounded-lg border border-line bg-surface px-3 py-2 text-sm hover:bg-surface-2">
           Export CSV
         </a>
@@ -48,13 +48,13 @@ export default async function RequestsPage({
       {!isEmailConfigured() && (
         <p className="rounded-lg border border-warn/40 bg-warn-soft px-4 py-3 text-sm text-ink-2">
           <span className="font-medium text-ink">Email alerts are off.</span> Set <code>RESEND_API_KEY</code> and{" "}
-          <code>LEAD_NOTIFY_EMAIL</code> to get an email for every new request.
+          <code>LEAD_NOTIFY_EMAIL</code> to get an email for every new lead.
         </p>
       )}
 
       <form className="flex flex-wrap gap-2 text-sm" method="get">
         <label className="sr-only" htmlFor="q">
-          Search requests
+          Search leads
         </label>
         <input
           id="q"
@@ -87,7 +87,7 @@ export default async function RequestsPage({
 
       {rows.length === 0 ? (
         <p className="rounded-xl border border-line bg-surface px-4 py-10 text-center text-muted">
-          No requests yet. They appear here when visitors click “Request full report” or “Request a quote”.
+          No leads yet. They appear here when visitors send the “Request a website” form.
         </p>
       ) : (
         <ul className="space-y-3">
@@ -124,9 +124,15 @@ export default async function RequestsPage({
               </div>
 
               <dl className="mt-3 grid gap-x-6 gap-y-1 text-sm sm:grid-cols-3">
+                {r.checks?.domain && (
+                  <div className="min-w-0">
+                    <dt className="text-muted">Wants a site like</dt>
+                    <dd className="truncate font-medium">{r.checks.domain}</dd>
+                  </div>
+                )}
                 {r.website && (
                   <div className="min-w-0">
-                    <dt className="text-muted">Website</dt>
+                    <dt className="text-muted">Current website</dt>
                     <dd className="truncate">
                       <a
                         href={/^https?:\/\//.test(r.website) ? r.website : `https://${r.website}`}

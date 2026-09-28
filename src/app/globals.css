@@ -136,6 +136,32 @@ body {
   animation: shimmer 1.4s linear infinite;
 }
 
+/* "Download PDF" uses the browser's print → Save as PDF. Always print in light colours. */
+@media print {
+  @page { margin: 14mm; }
+  :root, :root[data-theme="dark"] {
+    color-scheme: light;
+    --bg: #ffffff;
+    --surface: #ffffff;
+    --surface-2: #f4f3ef;
+    --ink: #0b0b0b;
+    --ink-2: #3f3e3b;
+    --muted: #6b6964;
+    --line: #dcdbd4;
+    --accent: #2a63d6;
+    --accent-soft: #e8effc;
+    --good: #0a7d0a;
+    --good-soft: #e5f4e5;
+    --warn: #9a6500;
+    --warn-soft: #fbf1dc;
+    --bad: #c03333;
+    --bad-soft: #fbe7e7;
+  }
+  body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  section, li { break-inside: avoid; }
+  nextjs-portal { display: none; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .skeleton { animation: none; }
   * { transition: none !important; }

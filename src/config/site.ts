@@ -14,14 +14,12 @@ export const site = {
   /** Your main website, linked from the footer. Leave empty to hide. */
   homepageUrl: "",
 
-  /** How many checks per rolling 24 hours. */
+  /** Checks per rolling 24 hours for visitors who aren't signed in. Signed-in users are unlimited. */
   limits: {
     visitor: 3,
-    account: 10,
+    /** Hidden safety net against bots on signed-in accounts (fair use). Real users never get near it. */
+    accountFairUse: 200,
   },
-
-  /** Shown on the "Request full report" form. Leave empty to just say "we'll send you a quote". */
-  auditPrice: "",
 };
 
 export const PROJECT_TYPES = [

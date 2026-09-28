@@ -22,7 +22,7 @@ export default async function Dashboard() {
             Export checks CSV
           </a>
           <a href="/api/admin/export?type=requests" className="rounded-lg border border-line bg-surface px-3 py-2 hover:bg-surface-2">
-            Export requests CSV
+            Export leads CSV
           </a>
           <a href="/api/admin/export?type=users" className="rounded-lg border border-line bg-surface px-3 py-2 hover:bg-surface-2">
             Export users CSV
@@ -48,11 +48,11 @@ export default async function Dashboard() {
         />
       </StatGroup>
 
-      <StatGroup title="Requests (full reports & website quotes)">
-        <Stat label="Awaiting reply" value={requests.new} note={`${fmtNum(requests.open)} still open`} href="/admin/requests?status=new" />
+      <StatGroup title="Leads (Request a website)">
+        <Stat label="Awaiting reply" value={requests.new} note={`${fmtNum(requests.open)} still open`} href="/admin/leads?status=new" />
         <Stat label="This month" value={requests.this_month} compare={{ previous: requests.last_month, label: "last month" }} />
         <Stat label={`This year (${year})`} value={requests.this_year} note={`${fmtNum(requests.last_year)} in ${year - 1}`} />
-        <Stat label="All time" value={requests.total} note={`${fmtNum(requests.audit)} reports · ${fmtNum(requests.website)} websites`} />
+        <Stat label="All time" value={requests.total} href="/admin/leads" />
       </StatGroup>
 
       <StatGroup title="Sign-ups">

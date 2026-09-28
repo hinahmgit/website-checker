@@ -2,7 +2,7 @@ import "server-only";
 import { site } from "@/config/site";
 import type { NewRequest } from "./store";
 
-// Emails you when someone sends a "full report" or "new website" request, via Resend (https://resend.com).
+// Emails you about every new lead ("Request a website" form), via Resend (https://resend.com).
 // Needs RESEND_API_KEY and LEAD_NOTIFY_EMAIL; silently does nothing if either is missing.
 
 const esc = (s: string) =>
@@ -12,9 +12,9 @@ export function isEmailConfigured(): boolean {
   return Boolean(process.env.RESEND_API_KEY && process.env.LEAD_NOTIFY_EMAIL);
 }
 
-const LABEL = { audit: "Full report request", website: "New website quote request" } as const;
+const LABEL = { audit: "New lead: full report", website: "New lead: website request" } as const;
 
-export async function notifyNewRequest(r: NewRequest, adminUrl: string): Promise<void> {
+export async function notifyNewRequest(r: NewRequest, adminUrl: string, inspiredBy?: string): Promise<void> {
   if (!isEmailConfigured()) return;
 
   const to = process.env.LEAD_NOTIFY_EMAIL!.split(",").map((s) => s.trim()).filter(Boolean);
@@ -24,7 +24,8 @@ export async function notifyNewRequest(r: NewRequest, adminUrl: string): Promise
   const rows: [string, string | null][] = [
     ["Name", r.name],
     ["Email", r.email],
-    ["Website", r.website],
+    ["Wants a site like", inspiredBy ?? null],
+    ["Current website", r.website],
     ["Project type", r.projectType],
     ["Budget", r.budget],
     ["Account", r.userId ? "Signed-in user" : "Not signed in"],
@@ -44,7 +45,7 @@ export async function notifyNewRequest(r: NewRequest, adminUrl: string): Promise
       .join("")}
   </table>
   ${r.message ? `<h3 style="margin:20px 0 6px;font-size:15px">Message</h3><p style="margin:0;font-size:14px;line-height:1.6;white-space:pre-wrap">${esc(r.message)}</p>` : ""}
-  <p style="margin:24px 0 0;font-size:14px">Reply to this email to answer ${esc(r.name)} directly. <a href="${esc(adminUrl)}" style="color:#2a63d6">Open requests →</a></p>
+  <p style="margin:24px 0 0;font-size:14px">Reply to this email to answer ${esc(r.name)} directly. <a href="${esc(adminUrl)}" style="color:#2a63d6">Open leads →</a></p>
 </div>`;
 
   const text = [
@@ -52,7 +53,7 @@ export async function notifyNewRequest(r: NewRequest, adminUrl: string): Promise
     ...shown.map(([k, v]) => `${k}: ${v}`),
     ...(r.message ? ["", r.message] : []),
     "",
-    `Requests: ${adminUrl}`,
+    `Leads: ${adminUrl}`,
   ].join("\n");
 
   const res = await fetch("https://api.resend.com/emails", {
@@ -62,7 +63,7 @@ export async function notifyNewRequest(r: NewRequest, adminUrl: string): Promise
       from,
       to,
       reply_to: r.email,
-      subject: `${LABEL[r.type]} from ${r.name}${r.website ? ` (${r.website.replace(/^https?:\/\//, "").replace(/\/$/, "")})` : ""}`,
+      subject: `${LABEL[r.type]} from ${r.name}${inspiredBy ? ` (wants a site like ${inspiredBy})` : ""}`,
       html,
       text,
     }),

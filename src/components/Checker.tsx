@@ -17,11 +17,21 @@ const STEPS = [
 
 const PLATFORMS = ["Shopify", "WordPress", "Webflow", "Framer", "Wix", "Squarespace", "WooCommerce", "BigCommerce", "Next.js"];
 
+/** Splits a typed or pasted address into scheme + the rest, e.g. "https://site.com/" → ["https", "site.com"]. */
+function splitAddress(value: string, current: "https" | "http"): { scheme: "https" | "http"; rest: string } {
+  const m = value.trimStart().match(/^(https?):\/\/(.*)$/i);
+  if (!m) return { scheme: current, rest: value };
+  // A bare trailing slash after the domain adds nothing.
+  const rest = m[2].replace(/^([^/?#]+)\/$/, "$1");
+  return { scheme: m[1].toLowerCase() as "https" | "http", rest };
+}
+
 type ScoreState = { status: "idle" | "loading" | "done" | "error"; data?: Scores; error?: string };
 type Me = { email: string | null; name: string | null } | null;
 
 export default function Checker() {
   const [url, setUrl] = useState("");
+  const [scheme, setScheme] = useState<"https" | "http">("https");
   const [phase, setPhase] = useState<"idle" | "loading" | "done" | "error" | "limit">("idle");
   const [step, setStep] = useState(0);
   const [result, setResult] = useState<PublicResult | null>(null);
@@ -36,6 +46,7 @@ export default function Checker() {
   function showResult(r: PublicResult, current: number) {
     setResult(r);
     setUrl(r.domain);
+    setScheme("https");
     setPhase("done");
     if (r.id) window.history.replaceState(null, "", `?id=${r.id}`);
     requestAnimationFrame(() => resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
@@ -129,7 +140,9 @@ export default function Checker() {
     const initial = params.get("url");
     if (id) reopen(id);
     else if (initial) {
-      setUrl(initial);
+      const clean = splitAddress(initial, "https");
+      setScheme(clean.scheme);
+      setUrl(clean.rest);
       analyze(initial);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -138,7 +151,7 @@ export default function Checker() {
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!url.trim()) document.getElementById("site-url")?.focus();
-    else if (phase !== "loading") analyze(url);
+    else if (phase !== "loading") analyze(`${scheme}://${url.trim()}`);
   }
 
   const signUpHref = `/signup?next=${encodeURIComponent(result?.id ? `/?id=${result.id}` : "/")}`;
@@ -168,7 +181,7 @@ export default function Checker() {
           </label>
           <div className="flex min-w-0 flex-1 items-center gap-2 pl-3">
             <span aria-hidden className="font-mono text-sm text-muted">
-              https://
+              {scheme}://
             </span>
             <input
               id="site-url"
@@ -179,7 +192,11 @@ export default function Checker() {
               spellCheck={false}
               placeholder="allbirds.com"
               value={url}
-              onChange={(e) => setUrl(e.target.value)}
+              onChange={(e) => {
+                const next = splitAddress(e.target.value, scheme);
+                setScheme(next.scheme);
+                setUrl(next.rest);
+              }}
               className="h-12 min-w-0 flex-1 bg-transparent text-lg text-ink outline-none placeholder:text-muted/70"
             />
           </div>

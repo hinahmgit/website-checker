@@ -47,7 +47,7 @@ export default function RequestForm({
   if (status === "sent") {
     return (
       <div role="status" className="rounded-lg bg-good-soft p-4">
-        <p className="font-medium text-ink">Thanks, your request has been sent ✓</p>
+        <p className="font-medium text-ink">Thanks, your request is in.</p>
         <p className="mt-1 text-sm text-ink-2">
           {site.ownerName} will reply by email within 1–2 working days to discuss your project and send a free quote.
         </p>
@@ -63,7 +63,7 @@ export default function RequestForm({
   return (
     <form onSubmit={submit} className="grid gap-3">
       {inspiredBy && (
-        <p className="rounded-lg bg-accent-soft px-3 py-2 text-sm text-ink">
+        <p className="rounded-lg border border-accent/25 bg-accent-soft px-3 py-2 text-sm text-ink">
           Inspired by <strong>{inspiredBy}</strong>. We&apos;ll use it as a reference for your project.
         </p>
       )}
@@ -129,7 +129,7 @@ export default function RequestForm({
         <button
           type="submit"
           disabled={status === "sending"}
-          className="h-11 rounded-lg bg-accent px-5 font-medium text-accent-ink hover:bg-accent-hover disabled:opacity-60"
+          className="btn btn-accent"
         >
           {status === "sending" ? "Sending…" : "Request a website"}
         </button>

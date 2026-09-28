@@ -1,12 +1,12 @@
 # CheckWebStack by HM Studio
 
-A lead-generation tool: visitors enter a URL and see what the site is built with (platform, theme,
-likely plan/hosting, apps and tech stack), Google mobile scores, and a count of UX/SEO issues.
+A free website platform detector: visitors enter a URL and see what the site is built with (platform, theme,
+likely plan/hosting, apps and tech stack), plus a Google PageSpeed score and basic SEO checks.
+The one call to action is "Request a website", which creates a lead in the admin panel.
 
 - **Visitors** get 3 checks per 24 hours and a preview of the issues.
-- **Free accounts** (Google or email link) get 10 checks per 24 hours and the full issue list.
-- **Requests**: "Request full report" (paid audit) and "Request a quote" (new website) go to the admin panel and your email.
-  You reply with an invoice. No payment provider needed.
+- **Free accounts** (Google sign-in) get unlimited checks and the full report (whole tech stack, detection evidence, every SEO check, PDF download).
+- **Leads**: "Want a website like X? Request a website" opens a form; submissions appear under Admin → Leads and are emailed to you.
 - Limits and business details live in `src/config/site.ts`.
 
 Pages: checker `/` (shareable results `/?id=…`), `/signin`, `/request`, `/privacy`, `/terms`, and the admin panel
@@ -20,7 +20,7 @@ Pages: checker `/` (shareable results `/?id=…`), `/signin`, `/request`, `/priv
 | Themes | Shopify (real theme name, version, free vs paid, renamed copies), WordPress (reads the theme's `style.css`, parent + child), Squarespace version, Drupal, Joomla, Magento, PrestaShop |
 | Likely plan | Wix free/premium/store, Webflow staging/CMS/Ecommerce, Framer free/paid, Squarespace, WordPress.com tiers, WordPress host (WP Engine, Kinsta, VIP…), Shopify tier estimate. Always labelled an estimate. |
 | Tech stack | ~170 fingerprints: analytics, ad pixels, email/SMS marketing, reviews, chat, payments, search, cookie consent, CDN/hosting, fonts, frameworks, page builders & WP plugins |
-| UX/SEO issues | HTTPS, mobile viewport, title/description, H1s, alt text, social image, favicon, language, schema, canonical, script weight, JS-only content, no analytics, no contact path, pixels without consent banner, outdated © year |
+| SEO & setup checks | HTTPS, mobile viewport, title/description, H1s, alt text, social image, favicon, language, schema, canonical, script weight, JS-only content, no analytics, no contact path, pixels without consent banner, outdated © year |
 
 Edit fingerprints in `src/lib/detect/signatures.ts`, and the plan/theme/issue logic in `src/lib/detect/analyze.ts`.
 Test detection from the terminal with `npm run detect -- shopify.com wix.com`.
@@ -108,6 +108,9 @@ The checker needs Supabase configured once deployed: without a database, limits,
 because each request may run on a different server.
 
 ## Branding
+
+- Fonts: Hanken Grotesk (text) and JetBrains Mono (technical details), set in `src/app/layout.tsx`.
+- Icon: `src/app/icon.svg` (browser tab), `src/app/apple-icon.tsx` (home screen), `src/app/opengraph-image.tsx` (link previews), `src/components/Logo.tsx` (header).
 
 - Name, tagline, booking link and footer are in `src/config/site.ts`. Set `bookingUrl` to your Calendly link to show "Book a call" buttons.
 - Colours are in `src/app/globals.css` (`--accent` etc., with a dark-mode set).

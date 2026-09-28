@@ -29,7 +29,7 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
           placeholder="Search name or email…"
           className="h-10 min-w-0 flex-1 rounded-lg border border-line bg-surface px-3 outline-none focus:border-accent sm:max-w-sm"
         />
-        <button className="h-10 rounded-lg bg-accent px-4 font-medium text-accent-ink hover:bg-accent-hover">Search</button>
+        <button className="btn btn-primary h-10">Search</button>
       </form>
 
       <div className="overflow-x-auto rounded-xl border border-line bg-surface">

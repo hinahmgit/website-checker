@@ -17,8 +17,8 @@ export default function PrivacyPage() {
       <h2>1. Information we collect</h2>
       <h3>Websites you check</h3>
       <p>
-        When you check a website we store the address you entered and the results: the platform, theme, technologies, issues found
-        and performance scores we detected. These results describe the public website, not you.
+        When you check a website we store the address you entered and the results: the platform, theme, technologies, speed score and
+        SEO checks. These results describe the public website, not you.
       </p>
       <h3>Technical information</h3>
       <p>

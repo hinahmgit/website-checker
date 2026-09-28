@@ -65,7 +65,7 @@ export default async function ChecksPage({ searchParams }: {
             </option>
           ))}
         </select>
-        <button className="h-10 rounded-lg bg-accent px-4 font-medium text-accent-ink hover:bg-accent-hover">Apply</button>
+        <button className="btn btn-primary h-10">Apply</button>
       </form>
 
       <div className="overflow-x-auto rounded-xl border border-line bg-surface">

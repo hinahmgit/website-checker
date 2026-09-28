@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { site } from "@/config/site";
 import { authEnabled, browserClient } from "@/lib/supabase-browser";
+import Logo from "./Logo";
 
 interface HeaderUser {
   email: string | null;
@@ -49,19 +50,17 @@ export default function SiteHeader() {
 
   return (
     <header className="flex items-center justify-between gap-3 py-5">
-      <Link href="/" className="flex items-center gap-2 font-semibold">
-        <span aria-hidden className="grid size-7 place-items-center rounded-md bg-accent text-sm text-accent-ink">
-          ◎
-        </span>
-        {site.name}
+      <Link href="/" className="flex items-center gap-2.5 text-[17px] font-bold tracking-[-0.02em]">
+        <Logo className="size-8" />
+        <span className="hidden min-[400px]:inline">{site.name}</span>
       </Link>
 
-      <nav className="flex items-center gap-1 text-sm sm:gap-3">
-        <Link href="/request" className="rounded-md px-2 py-1.5 font-medium text-ink-2 hover:text-ink">
+      <nav className="flex items-center gap-1.5 text-sm sm:gap-3">
+        <Link href="/request" className="rounded-md px-2 py-1.5 font-semibold text-ink-2 hover:text-ink">
           Request a website
         </Link>
         {authEnabled && user === null && (
-          <Link href="/signin" className="rounded-lg border border-line bg-surface px-3 py-1.5 font-medium hover:bg-surface-2">
+          <Link href="/signin" className="btn btn-primary btn-sm">
             Sign in
           </Link>
         )}
@@ -77,7 +76,7 @@ export default function SiteHeader() {
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={user.avatar} alt="" className="size-6 rounded-full" referrerPolicy="no-referrer" />
               ) : (
-                <span aria-hidden className="grid size-6 place-items-center rounded-full bg-accent-soft text-xs font-semibold text-accent">
+                <span aria-hidden className="grid size-6 place-items-center rounded-full bg-accent-soft text-xs font-bold text-accent">
                   {(user.name ?? user.email ?? "?").slice(0, 1).toUpperCase()}
                 </span>
               )}

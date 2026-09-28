@@ -36,7 +36,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
           </p>
         )}
 
-        <button type="submit" className="mt-5 h-11 w-full rounded-lg bg-accent font-medium text-accent-ink hover:bg-accent-hover">
+        <button type="submit" className="btn btn-primary mt-5 w-full">
           Sign in
         </button>
       </form>

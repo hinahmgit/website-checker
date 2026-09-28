@@ -68,8 +68,7 @@ export default async function LeadsPage({
         </label>
         <select id="type" name="type" defaultValue={sp.type ?? ""} className="h-10 rounded-lg border border-line bg-surface px-2">
           <option value="">All types</option>
-          <option value="audit">Full report</option>
-          <option value="website">New website</option>
+                    <option value="website">New website</option>
         </select>
         <label className="sr-only" htmlFor="status">
           Status
@@ -82,7 +81,7 @@ export default async function LeadsPage({
             </option>
           ))}
         </select>
-        <button className="h-10 rounded-lg bg-accent px-4 font-medium text-accent-ink hover:bg-accent-hover">Apply</button>
+        <button className="btn btn-primary h-10">Apply</button>
       </form>
 
       {rows.length === 0 ? (

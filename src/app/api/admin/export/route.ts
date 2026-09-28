@@ -71,7 +71,7 @@ export async function GET(req: Request) {
       ["Platform", (r) => r.platform],
       ["Theme", (r) => r.theme],
       ["Likely plan", (r) => r.likely_plan],
-      ["UX issues", (r) => (Array.isArray(r.issues) ? r.issues.length : "")],
+      ["SEO checks flagged", (r) => (Array.isArray(r.issues) ? r.issues.length : "")],
       ["Performance", (r) => score(r, "performance")],
       ["SEO", (r) => score(r, "seo")],
       ["Accessibility", (r) => score(r, "accessibility")],

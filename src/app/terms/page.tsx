@@ -17,8 +17,8 @@ export default function TermsPage() {
       <h2>1. The service</h2>
       <p>
         {site.name} analyses publicly available information about websites (such as page code, headers and performance tests) to estimate
-        which platform, theme and technologies they use, and to point out possible improvements. Checking is free. Visitors can run {site.limits.visitor} checks per 24 hours; signed-in users get unlimited checks and
-        detailed reports, subject to fair use (see section 3). We may change these limits or features at any time.
+        which platform, theme and technologies they use, and runs basic speed and SEO checks. Checking is free. Visitors can run {site.limits.visitor} checks per 24 hours; signed-in users get unlimited checks and
+        full reports, subject to fair use (see section 3). We may change these limits or features at any time.
       </p>
 
       <h2>2. Results are estimates</h2>

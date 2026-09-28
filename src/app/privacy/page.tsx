@@ -28,8 +28,9 @@ export default function PrivacyPage() {
       </p>
       <h3>Account information</h3>
       <p>
-        If you sign in with Google, we receive your name, email address and profile picture from Google. If you sign in with an email
-        link, we receive your email address. We never see or store your Google password.
+        If you sign in with Google, we receive your name, email address and profile picture from Google. If you sign up with email and a
+        password, we receive your name and email address; your password is stored only in hashed form by our sign-in provider
+        (Supabase), so we never see it. We never see your Google password either.
       </p>
       <h3>Website requests you send us</h3>
       <p>

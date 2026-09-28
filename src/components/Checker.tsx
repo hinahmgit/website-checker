@@ -141,7 +141,7 @@ export default function Checker() {
     else if (phase !== "loading") analyze(url);
   }
 
-  const signInHref = `/signin?next=${encodeURIComponent(result?.id ? `/?id=${result.id}` : "/")}`;
+  const signUpHref = `/signup?next=${encodeURIComponent(result?.id ? `/?id=${result.id}` : "/")}`;
   const intro = phase === "idle" || phase === "error" || phase === "limit";
 
   return (
@@ -189,7 +189,7 @@ export default function Checker() {
           </button>
         </form>
 
-        {usage && <UsageLine usage={usage} signInHref={signInHref} />}
+        {usage && <UsageLine usage={usage} signUpHref={signUpHref} />}
 
         {phase === "error" && (
           <p role="alert" className="mt-4 rounded-xl border border-bad/30 bg-bad-soft px-4 py-3 text-sm text-ink">
@@ -213,18 +213,18 @@ export default function Checker() {
         )}
       </section>
 
-      {phase === "limit" && <LimitCard message={error} signedIn={usage?.signedIn ?? false} signInHref={signInHref} />}
+      {phase === "limit" && <LimitCard message={error} signedIn={usage?.signedIn ?? false} signUpHref={signUpHref} />}
 
       {phase === "loading" && <Loading step={step} />}
 
       {phase === "done" && result && (
         <div ref={resultRef} className="scroll-mt-4 space-y-4 pb-6">
-          {result.detailed ? <ReportBar result={result} /> : <UnlockBanner signInHref={signInHref} />}
+          {result.detailed ? <ReportBar result={result} /> : <UnlockBanner signUpHref={signUpHref} />}
           <Summary result={result} />
-          <Technologies result={result} signInHref={signInHref} />
+          <Technologies result={result} signUpHref={signUpHref} />
           <WebsiteCta result={result} onRequest={() => setRequesting(true)} />
           <SpeedCard state={scores} hasId={Boolean(result.id)} />
-          <SeoChecks result={result} signInHref={signInHref} />
+          <SeoChecks result={result} signUpHref={signUpHref} />
           <p className="hidden text-xs text-muted print:block">
             Report by {site.name} · {site.ownerName}. “Likely plan” is an estimate from publicly visible signals.
           </p>
@@ -261,7 +261,7 @@ function CardTitle({ eyebrow, title, aside }: { eyebrow: string; title: React.Re
   );
 }
 
-function UsageLine({ usage, signInHref }: { usage: Usage; signInHref: string }) {
+function UsageLine({ usage, signUpHref }: { usage: Usage; signUpHref: string }) {
   if (usage.signedIn) {
     return <p className="mt-3 pl-1 text-sm text-muted print:hidden">Signed in · unlimited checks and full reports</p>;
   }
@@ -271,8 +271,8 @@ function UsageLine({ usage, signInHref }: { usage: Usage; signInHref: string }) 
       {authEnabled && (
         <>
           {" · "}
-          <Link href={signInHref} className="font-semibold text-accent underline-offset-4 hover:underline">
-            Sign in for unlimited
+          <Link href={signUpHref} className="font-semibold text-accent underline-offset-4 hover:underline">
+            Sign up for unlimited
           </Link>
         </>
       )}
@@ -280,15 +280,15 @@ function UsageLine({ usage, signInHref }: { usage: Usage; signInHref: string }) 
   );
 }
 
-function LimitCard({ message, signedIn, signInHref }: { message: string; signedIn: boolean; signInHref: string }) {
+function LimitCard({ message, signedIn, signUpHref }: { message: string; signedIn: boolean; signUpHref: string }) {
   return (
     <Card>
       <CardTitle eyebrow="Daily limit" title={signedIn ? "Please try again tomorrow" : "You've used today's free checks"} />
       <p className="mt-2 text-ink-2">{message}</p>
       <div className="mt-5 flex flex-wrap gap-2">
         {!signedIn && authEnabled && (
-          <Link href={signInHref} className="btn btn-primary">
-            Sign in free
+          <Link href={signUpHref} className="btn btn-primary">
+            Sign up free
           </Link>
         )}
         <Link href="/request" className="btn btn-ghost">
@@ -323,16 +323,16 @@ function ReportBar({ result }: { result: PublicResult }) {
   );
 }
 
-function UnlockBanner({ signInHref }: { signInHref: string }) {
+function UnlockBanner({ signUpHref }: { signUpHref: string }) {
   if (!authEnabled) return null;
   return (
     <div className="flex flex-col gap-3 rounded-2xl border border-line bg-surface-2 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-7">
       <p className="text-sm text-ink-2">
-        <span className="font-semibold text-ink">This is a preview.</span> Sign in free to see the full tech stack, how we identified the
-        platform, every SEO check and a PDF download. Unlimited checks included.
+        <span className="font-semibold text-ink">This is a preview.</span> Sign up free for the full report: the whole tech stack, how we
+        identified the platform, every SEO check and a PDF download. Unlimited checks included.
       </p>
-      <Link href={signInHref} className="btn btn-primary btn-sm shrink-0">
-        Sign in free
+      <Link href={signUpHref} className="btn btn-primary btn-sm shrink-0">
+        Sign up free
       </Link>
     </div>
   );
@@ -454,7 +454,7 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
   );
 }
 
-function Technologies({ result, signInHref }: { result: PublicResult; signInHref: string }) {
+function Technologies({ result, signUpHref }: { result: PublicResult; signUpHref: string }) {
   const groups = new Map<string, string[]>();
   for (const t of result.technologies) {
     if (t.category === "Platform") continue;
@@ -481,11 +481,11 @@ function Technologies({ result, signInHref }: { result: PublicResult; signInHref
       {result.hiddenTechCount > 0 && (
         <div className="mt-2 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-surface-2 px-4 py-3 text-sm">
           <span className="text-ink-2">
-            <span className="font-semibold text-ink">+{result.hiddenTechCount} more</span> detected on this site
+            <span className="font-semibold text-ink">+{result.hiddenTechCount} more</span> detected. The full list is in the full report.
           </span>
           {authEnabled && (
-            <Link href={signInHref} className="font-semibold text-accent underline-offset-4 hover:underline">
-              Sign in to see all →
+            <Link href={signUpHref} className="btn btn-primary btn-sm">
+              Sign up free
             </Link>
           )}
         </div>
@@ -595,7 +595,7 @@ function IssueItem({ issue }: { issue: Issue }) {
   );
 }
 
-function SeoChecks({ result, signInHref }: { result: PublicResult; signInHref: string }) {
+function SeoChecks({ result, signUpHref }: { result: PublicResult; signUpHref: string }) {
   const { issueSummary: sum } = result;
   return (
     <Card>
@@ -635,11 +635,11 @@ function SeoChecks({ result, signInHref }: { result: PublicResult; signInHref: s
           {sum.total > 1 && (
             <div className="mt-1 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-surface-2 px-4 py-3 text-sm">
               <span className="text-ink-2">
-                <span className="font-semibold text-ink">+{sum.total - 1} more</span> in the full report
+                <span className="font-semibold text-ink">+{sum.total - 1} more</span> in the full report. Sign up free to see them all.
               </span>
               {authEnabled && (
-                <Link href={signInHref} className="font-semibold text-accent underline-offset-4 hover:underline">
-                  Sign in to see all →
+                <Link href={signUpHref} className="btn btn-primary btn-sm">
+                  Sign up free
                 </Link>
               )}
             </div>

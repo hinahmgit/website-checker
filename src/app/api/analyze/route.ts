@@ -35,7 +35,7 @@ export async function POST(req: Request) {
       {
         error: user
           ? "You've run a very large number of checks today. Please try again tomorrow."
-          : `You've used your ${site.limits.visitor} free checks for today. Sign in free for unlimited checks and full reports.`,
+          : `You've used your ${site.limits.visitor} free checks for today. Sign up free for unlimited checks and full reports.`,
         code: user ? "limit_account" : "limit_visitor",
         usage,
       },

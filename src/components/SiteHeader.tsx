@@ -55,14 +55,20 @@ export default function SiteHeader() {
         <span className="hidden min-[400px]:inline">{site.name}</span>
       </Link>
 
-      <nav className="flex items-center gap-1.5 text-sm sm:gap-3">
+      <nav className="flex items-center gap-0.5 text-sm sm:gap-2">
         <Link href="/request" className="rounded-md px-2 py-1.5 font-semibold text-ink-2 hover:text-ink">
-          Request a website
+          <span className="hidden sm:inline">Request a website</span>
+          <span className="sm:hidden">Get a site</span>
         </Link>
         {authEnabled && user === null && (
-          <Link href="/signin" className="btn btn-primary btn-sm">
-            Sign in
-          </Link>
+          <>
+            <Link href="/signin" className="rounded-md px-2 py-1.5 font-semibold text-ink-2 hover:text-ink">
+              Log in
+            </Link>
+            <Link href="/signup" className="btn btn-primary btn-sm">
+              Sign up
+            </Link>
+          </>
         )}
         {user && (
           <div ref={menuRef} className="relative">
@@ -89,7 +95,7 @@ export default function SiteHeader() {
                   Request a website
                 </Link>
                 <button role="menuitem" onClick={signOut} className="block w-full rounded-md px-3 py-2 text-left hover:bg-surface-2">
-                  Sign out
+                  Log out
                 </button>
               </div>
             )}

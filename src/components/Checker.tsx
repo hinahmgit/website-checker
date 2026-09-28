@@ -146,23 +146,22 @@ export default function Checker() {
 
   return (
     <div>
-      <section className={`print:hidden ${intro ? "pt-12 pb-10 sm:pt-24" : "pt-6 pb-6"}`}>
+      <section className={`print:hidden ${intro ? "pt-6 pb-10 sm:pt-10" : "pt-6 pb-6"}`}>
         {intro && <p className="eyebrow">Website platform detector</p>}
         <h1
-          className={`font-bold tracking-[-0.035em] text-balance ${intro ? "mt-3 text-[2.5rem] leading-[1.02] sm:text-[4.25rem]" : "text-2xl sm:text-3xl"}`}
+          className={`font-bold tracking-[-0.035em] text-balance ${intro ? "mt-3 text-[2.35rem] leading-[1.04] sm:text-[3.4rem]" : "text-2xl sm:text-3xl"}`}
         >
           What is this website built with?
         </h1>
         {intro && (
-          <p className="mt-5 max-w-xl text-lg leading-relaxed text-ink-2">
-            Enter any address to see the platform, theme, likely plan, hosting and tools behind it. You also get a Google speed score
-            and a quick SEO check.
+          <p className="mt-4 max-w-2xl text-lg leading-relaxed text-ink-2">
+            See the platform, theme, likely plan, hosting and tools behind any site, plus a Google speed score and a quick SEO check.
           </p>
         )}
 
         <form
           onSubmit={onSubmit}
-          className={`flex flex-col gap-2 rounded-2xl border border-line bg-surface p-2 shadow-[0_1px_0_rgba(0,0,0,0.03),0_12px_32px_-18px_rgba(21,22,26,0.25)] focus-within:border-ink-2 sm:flex-row ${intro ? "mt-8" : "mt-4"}`}
+          className={`flex flex-col gap-2 rounded-2xl border border-line bg-surface p-2 shadow-[0_1px_0_rgba(0,0,0,0.03),0_12px_32px_-18px_rgba(21,22,26,0.25)] focus-within:border-ink-2 sm:flex-row ${intro ? "mt-6" : "mt-4"}`}
         >
           <label htmlFor="site-url" className="sr-only">
             Website address
@@ -199,7 +198,7 @@ export default function Checker() {
         )}
 
         {phase === "idle" && (
-          <div className="mt-12 border-t border-line pt-6">
+          <div className="mt-10 border-t border-line pt-6">
             <p className="eyebrow">Detects</p>
             <ul className="mt-3 flex flex-wrap gap-2">
               {PLATFORMS.map((p) => (

@@ -3,10 +3,10 @@ import { site } from "@/config/site";
 import { currentUser } from "@/lib/auth-user";
 import { analyzeUrl } from "@/lib/detect/analyze";
 import { CheckError, domainOf, normalizeInput } from "@/lib/detect/fetch";
-import { clientIp, hashIp } from "@/lib/request";
+import { clientIp, deviceHash, hashIp } from "@/lib/request";
 import { countChecksToday, saveCheck, toPublic } from "@/lib/store";
 import type { Detection } from "@/lib/types";
-import { usageFor } from "@/lib/usage";
+import { usageFor, waitText } from "@/lib/usage";
 
 export const maxDuration = 30;
 
@@ -23,19 +23,21 @@ export async function POST(req: Request) {
 
   const user = await currentUser();
   const ipHash = hashIp(clientIp(req));
+  const device = user ? null : await deviceHash();
   let used = 0;
+  let oldest: string | null = null;
   try {
-    used = await countChecksToday({ userId: user?.id ?? null, ipHash });
+    ({ count: used, oldest } = await countChecksToday({ userId: user?.id ?? null, ipHash, deviceHash: device }));
   } catch (err) {
     console.error("usage lookup failed", err);
   }
-  const { blocked, ...usage } = usageFor(Boolean(user), used);
+  const { blocked, ...usage } = usageFor(Boolean(user), used, oldest);
   if (blocked) {
     return NextResponse.json(
       {
         error: user
           ? "You've run a very large number of checks today. Please try again tomorrow."
-          : `You've used your ${site.limits.visitor} free checks for today. Sign up free for unlimited checks and full reports.`,
+          : `You've used your ${site.limits.visitor} free checks. You can check another site in ${waitText(usage.resetsAt) ?? "24 hours"}, or sign up free for unlimited checks right now.`,
         code: user ? "limit_account" : "limit_visitor",
         usage,
       },
@@ -54,6 +56,7 @@ export async function POST(req: Request) {
       url: target.toString(),
       domain: domainOf(target),
       ipHash,
+      deviceHash: device,
       userId: user?.id ?? null,
       error: message,
     }).catch((e) => console.error("saving failed check", e));
@@ -62,11 +65,20 @@ export async function POST(req: Request) {
 
   let id: string | null = null;
   try {
-    id = await saveCheck({ inputUrl: raw, url: target.toString(), domain: detection.domain, ipHash, userId: user?.id ?? null, detection });
+    id = await saveCheck({
+      inputUrl: raw,
+      url: target.toString(),
+      domain: detection.domain,
+      ipHash,
+      deviceHash: device,
+      userId: user?.id ?? null,
+      detection,
+    });
   } catch (err) {
     console.error("saving check failed", err);
   }
 
-  const { blocked: _, ...after } = usageFor(Boolean(user), used + 1);
+  // This check now counts too; the window starts at the oldest check (or now, if this is the first).
+  const { blocked: _, ...after } = usageFor(Boolean(user), used + 1, oldest ?? new Date().toISOString());
   return NextResponse.json({ result: toPublic(id, detection, null, Boolean(user)), usage: after });
 }

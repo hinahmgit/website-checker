@@ -51,6 +51,8 @@ export interface Usage {
   limit: number | null;
   used: number;
   remaining: number | null;
+  /** When a visitor who has used all free checks gets one back (ISO time), else null. */
+  resetsAt: string | null;
 }
 
 export type RequestType = "audit" | "website";

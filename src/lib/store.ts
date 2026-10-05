@@ -17,21 +17,43 @@ const memory = ((globalThis as { __wcMemory?: Map<string, MemoryCheck> }).__wcMe
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export const isUuid = (v: unknown): v is string => typeof v === "string" && UUID.test(v);
 
-/** Checks in the last 24 hours, counted per account when signed in, otherwise per (hashed) IP. */
-export async function countChecksToday(who: { userId: string | null; ipHash: string }): Promise<number> {
-  if (!isDbConfigured()) return 0;
+/**
+ * Successful checks in the last 24 hours, plus when the earliest of them happened.
+ * Signed in: counted per account. Visitors: per IP address OR per browser, whichever has more,
+ * so a new IP from the internet provider doesn't reset the free limit.
+ */
+export async function countChecksToday(who: {
+  userId: string | null;
+  ipHash: string;
+  deviceHash?: string | null;
+}): Promise<{ count: number; oldest: string | null }> {
+  if (!isDbConfigured()) return { count: 0, oldest: null };
   const since = new Date(Date.now() - 24 * 60 * 60_000).toISOString();
-  let query = db().from("checks").select("id", { count: "exact", head: true }).gte("created_at", since).eq("status", "ok");
-  query = who.userId ? query.eq("user_id", who.userId) : query.eq("ip_hash", who.ipHash).is("user_id", null);
-  const { count, error } = await query;
+  let query = db()
+    .from("checks")
+    .select("created_at", { count: "exact" })
+    .gte("created_at", since)
+    .eq("status", "ok")
+    .order("created_at", { ascending: true })
+    .limit(1);
+  if (who.userId) query = query.eq("user_id", who.userId);
+  else {
+    query = query.is("user_id", null);
+    // Both values are hex hashes, so they are safe inside the filter string.
+    query = who.deviceHash
+      ? query.or(`ip_hash.eq.${who.ipHash},details->>device.eq.${who.deviceHash}`)
+      : query.eq("ip_hash", who.ipHash);
+  }
+  const { data, count, error } = await query;
   if (error) throw error;
-  return count ?? 0;
+  return { count: count ?? 0, oldest: (data?.[0]?.created_at as string | undefined) ?? null };
 }
 
 export async function saveCheck(input: {
   inputUrl: string;
   domain: string;
   ipHash: string;
+  deviceHash?: string | null;
   userId: string | null;
   detection?: Detection;
   error?: string;
@@ -67,6 +89,7 @@ export async function saveCheck(input: {
             planConfidence: d.likelyPlan?.confidence ?? null,
             planReason: d.likelyPlan?.reason ?? null,
             appsCount: d.appsCount,
+            device: input.deviceHash ?? null,
           }
         : null,
       ip_hash: input.ipHash,

@@ -127,8 +127,12 @@ export default function Checker() {
   }, [phase]);
 
   // On load: fetch today's usage, then reopen /?id=… results or run /?url=… checks.
+  const loaded = useRef(false);
   useEffect(() => {
-    fetch("/api/usage")
+    // React runs mount effects twice in development; without this guard a ?url= check would run (and count) twice.
+    if (loaded.current) return;
+    loaded.current = true;
+    fetch("/api/usage", { cache: "no-store" })
       .then((r) => r.json())
       .then((d) => {
         setUsage(d.usage);
@@ -277,13 +281,25 @@ function CardTitle({ eyebrow, title, aside }: { eyebrow: string; title: React.Re
   );
 }
 
+/** "5h 20m", "45m": time until the given moment. */
+function waitText(iso: string | null): string | null {
+  if (!iso) return null;
+  const mins = Math.max(1, Math.ceil((Date.parse(iso) - Date.now()) / 60_000));
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return h > 0 ? `${h}h${m ? ` ${m}m` : ""}` : `${m}m`;
+}
+
 function UsageLine({ usage, signUpHref }: { usage: Usage; signUpHref: string }) {
   if (usage.signedIn) {
     return <p className="mt-3 pl-1 text-sm text-muted print:hidden">Signed in · unlimited checks and full reports</p>;
   }
+  const wait = usage.remaining === 0 ? waitText(usage.resetsAt) : null;
   return (
     <p className="mt-3 pl-1 text-sm text-muted print:hidden">
-      {usage.remaining} of {usage.limit} free check{usage.limit === 1 ? "" : "s"} left today
+      {usage.remaining === 0
+        ? `No free checks left${wait ? ` · next one in ${wait}` : ""}`
+        : `${usage.remaining} of ${usage.limit} free check${usage.limit === 1 ? "" : "s"} left`}
       {authEnabled && (
         <>
           {" · "}
